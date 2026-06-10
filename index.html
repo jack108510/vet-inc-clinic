@@ -1694,9 +1694,9 @@ async function loadDataAndBuild() {
    accountsData = acctRows;
    microMarginData = mmRows;
    
-   // Load items for inventory usage estimation
-   const itemRows = await sbFetchAll('items', 'select=code,name,service_code,unit_cost');
-   const inventoryItems = itemRows.filter(r => r.service_code);
+   // Load service catalog from std_services (no unit_cost available)
+   const itemRows = await sbFetchAll('std_services', 'select=service_code,name,category&clinic_id=eq.rosslyn');
+   const inventoryItems = []; // std_services has no unit_cost; skip COGS calculation
    
    // Build inventory usage from serviceData + items
    const invMap = {};
@@ -2056,32 +2056,29 @@ function refreshUpliftBoard() {
 
 async function loadCapturedRevenue() {
   try {
-    const res = await fetch('https://rnqhhzatlxmyvccdvqkr.supabase.co/rest/v1/campaign_items?select=captured_uplift,implemented_at&status=eq.implemented', {
-      headers: {
-        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30',
-        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30'
-      }
+    const res = await fetch(`${SB_URL}/rest/v1/std_approval_queue?select=expected_annual_uplift,created_at&status=eq.approved&clinic_id=eq.rosslyn`, {
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
     });
-    
+
     if (!res.ok) {
       document.getElementById('ub-captured-total').textContent = '--';
       document.getElementById('ub-captured-yesterday').textContent = '--';
       document.getElementById('ub-campaign-month').textContent = '--';
       return;
     }
-    
+
     const items = await res.json();
     const now = new Date();
     const yesterday = new Date(now - 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
-    
+
     let total = 0;
     let yesterdayTotal = 0;
     let monthTotal = 0;
-    
+
     items.forEach(item => {
-      const uplift = parseFloat(item.captured_uplift) || 0;
-      const implDate = new Date(item.implemented_at);
+      const uplift = parseFloat(item.expected_annual_uplift) || 0;
+      const implDate = new Date(item.created_at);
       total += uplift;
       if (implDate >= yesterday) yesterdayTotal += uplift;
       if (implDate >= thirtyDaysAgo) monthTotal += uplift;
@@ -3406,7 +3403,7 @@ const WidgetBoard = (() => {
         break;
       case 'top-services':
       case 'revenue-by-category':
-        data = await sbQ('services', `select=code,description,amount,quantity,service_type,created_at&order=amount.desc&limit=5000`);
+        data = await sbQ('std_transactions', `select=service_code,description,amount,quantity,category,txn_date&order=amount.desc&limit=5000&clinic_id=eq.rosslyn`);
         break;
       case 'monthly-trend':
         data = await sbQ('accounts', `select=amount_raw,txn_date&txn_date=gte.${params.from}&order=txn_date.asc`);
@@ -3414,40 +3411,40 @@ const WidgetBoard = (() => {
         break;
       case 'avg-visit-value':
       case 'services-per-visit': {
-        const accts = await sbQ('accounts', `select=amount_raw,txn_date&txn_date=gte.${params.month_start}&txn_date=lt.${params.month_end}`);
-        const visits = await sbQ('visits', `select=visit_date,doctor&visit_date=gte.${params.month_start}&visit_date=lt.${params.month_end}`);
-        data = { services: accts.map(a => ({amount: (a.amount_raw||0)/100})), visits };
+        const accts = await sbQ('std_transactions', `select=amount,txn_date&txn_date=gte.${params.month_start}&txn_date=lt.${params.month_end}&clinic_id=eq.rosslyn`);
+        const visits = await sbQ('std_visits', `select=visit_date,doctor&visit_date=gte.${params.month_start}&visit_date=lt.${params.month_end}&clinic_id=eq.rosslyn`);
+        data = { services: accts.map(a => ({amount: parseFloat(a.amount)||0})), visits };
         break;
       }
       case 'visits-today':
-        data = await sbQ('visits', `select=visit_date,doctor&visit_date=gte.${params.date}T00:00:00&visit_date=lt.${params.date}T23:59:59`);
+        data = await sbQ('std_visits', `select=visit_date,doctor&visit_date=eq.${params.date}&clinic_id=eq.rosslyn`);
         break;
       case 'visits-month':
-        data = await sbQ('visits', `select=visit_date,doctor&visit_date=gte.${params.month_start}&visit_date=lt.${params.month_end}`);
+        data = await sbQ('std_visits', `select=visit_date,doctor&visit_date=gte.${params.month_start}&visit_date=lt.${params.month_end}&clinic_id=eq.rosslyn`);
         break;
       case 'patients-per-doctor':
-        data = await sbQ('visits', `select=doctor&visit_date=gte.${params.date}T00:00:00&visit_date=lt.${params.date}T23:59:59`);
+        data = await sbQ('std_visits', `select=doctor&visit_date=eq.${params.date}&clinic_id=eq.rosslyn`);
         break;
       case 'doctor-revenue': {
-        const visits = await sbQ('visits', `select=visit_date,doctor&visit_date=gte.${params.month_start}&visit_date=lt.${params.month_end}`);
-        const accts = await sbQ('accounts', `select=amount_raw,txn_date&txn_date=gte.${params.month_start}&txn_date=lt.${params.month_end}`);
-        data = { visits, services: accts.map(a => ({amount: (a.amount_raw||0)/100})) };
+        const visits = await sbQ('std_visits', `select=visit_date,doctor&visit_date=gte.${params.month_start}&visit_date=lt.${params.month_end}&clinic_id=eq.rosslyn`);
+        const accts = await sbQ('std_transactions', `select=amount,txn_date&txn_date=gte.${params.month_start}&txn_date=lt.${params.month_end}&clinic_id=eq.rosslyn`);
+        data = { visits, services: accts.map(a => ({amount: parseFloat(a.amount)||0})) };
         break;
       }
       case 'new-clients':
-        data = await sbQ('clients', `select=record_num&created_at=gte.${params.month_start}&created_at=lt.${params.month_end}`);
+        data = await sbQ('std_clients', `select=created_at&created_at=gte.${params.month_start}&created_at=lt.${params.month_end}&clinic_id=eq.rosslyn`);
         break;
       case 'vaccines-month':
-        data = await sbQ('vaccines', `select=vaccine_date,doctor&vaccine_date=gte.${params.month_start}&vaccine_date=lt.${params.month_end}`);
+        data = await sbQ('std_vaccines', `select=vaccine_date,doctor&vaccine_date=gte.${params.month_start}&vaccine_date=lt.${params.month_end}&clinic_id=eq.rosslyn`);
         break;
       case 'vaccines-by-doctor':
-        data = await sbQ('vaccines', `select=doctor,vaccine_date&vaccine_date=gte.${params.month_start}&vaccine_date=lt.${params.month_end}`);
+        data = await sbQ('std_vaccines', `select=doctor,vaccine_date&vaccine_date=gte.${params.month_start}&vaccine_date=lt.${params.month_end}&clinic_id=eq.rosslyn`);
         break;
       case 'appointments-today':
-        data = await sbQ('appointments', `select=appt_date,doctor,reason&appt_date=gte.${params.date}T00:00:00&appt_date=lt.${params.date}T23:59:59&order=appt_date.asc`);
+        data = await sbQ('std_appointments', `select=appt_date,doctor,reason&appt_date=eq.${params.date}&order=appt_date.asc&clinic_id=eq.rosslyn`);
         break;
       case 'upcoming-appointments':
-        data = await sbQ('appointments', `select=appt_date,doctor&appt_date=gte.${params.from}&appt_date=lt.${params.to}&order=appt_date.asc`);
+        data = await sbQ('std_appointments', `select=appt_date,doctor&appt_date=gte.${params.from}&appt_date=lt.${params.to}&order=appt_date.asc&clinic_id=eq.rosslyn`);
         break;
       case 'price-staleness':
         data = await sbQ('prices', `select=treatment_code,price,updated_at&order=updated_at.asc`);
@@ -3836,8 +3833,8 @@ const WidgetBoard = (() => {
       if (!rows || rows.length === 0) throw new Error('empty');
       const byCat = {};
       for (const r of rows) {
-        const t = r.service_type||'AT';
-        const name = CAT_NAMES[t] || t;
+        const t = (r.category || 'other').toLowerCase();
+        const name = t.charAt(0).toUpperCase() + t.slice(1);
         byCat[name] = (byCat[name]||0)+(parseFloat(r.amount)||0);
       }
       const sorted = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
@@ -5013,22 +5010,27 @@ window.activateCampaign = async function(type) {
     });
     const [campaign] = await res.json();
     
-    // Create campaign items
+    // Create approval queue items
     const campaignItems = items.slice(0, 100).map(item => ({
+      clinic_id: 'rosslyn',
       campaign_id: campaign.id,
-      treatment_code: item.id || item.code,
-      treatment_name: item.name,
+      service_code: item.id || item.code,
+      service_name: item.name,
       old_price: item.price,
       suggested_price: item.suggested,
-      annual_volume: item.usage || item.volume || 0,
-      potential_uplift: item.uplift || 0
+      price_increase_pct: item.price > 0 ? ((item.suggested - item.price) / item.price * 100) : 0,
+      expected_monthly_uplift: (item.uplift || 0) / 12,
+      expected_annual_uplift: item.uplift || 0,
+      volume_risk: 'low',
+      status: 'pending',
+      priority: 1
     }));
 
-    await fetch('https://rnqhhzatlxmyvccdvqkr.supabase.co/rest/v1/campaign_items', {
+    await fetch(`${SB_URL}/rest/v1/std_approval_queue`, {
       method: 'POST',
       headers: {
-        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30',
-        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30',
+        apikey: SB_KEY,
+        Authorization: 'Bearer ' + SB_KEY,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(campaignItems)
@@ -5072,12 +5074,9 @@ window.openCampaignAnalytics = async function(type) {
       return;
     }
 
-    // Get items
-    const itemsRes = await fetch(`https://rnqhhzatlxmyvccdvqkr.supabase.co/rest/v1/campaign_items?select=*&campaign_id=eq.${campaign.id}&order=potential_uplift.desc`, {
-      headers: {
-        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30',
-        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30'
-      }
+    // Get approval queue items
+    const itemsRes = await fetch(`${SB_URL}/rest/v1/std_approval_queue?select=*&campaign_id=eq.${campaign.id}&order=expected_annual_uplift.desc&clinic_id=eq.rosslyn`, {
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
     });
     const items = await itemsRes.json();
 
@@ -5109,22 +5108,22 @@ window.openCampaignAnalytics = async function(type) {
         <canvas id="progressChart" height="60"></canvas>
       </div>
       
-      <div style="margin-bottom:0.75rem;font-size:0.8rem;font-weight:700;color:#1e293b">Campaign Items</div>
+      <div style="margin-bottom:0.75rem;font-size:0.8rem;font-weight:700;color:#1e293b">Approval Queue</div>
       <div class="items-list">
         <div class="items-list-header">
           <span>Item</span>
           <span>Current</span>
           <span>Suggested</span>
           <span>Uplift/Yr</span>
-          <span>Status</span>
+          <span>Actions</span>
         </div>
         ${items.slice(0, 50).map(item => `
           <div class="items-list-row">
-            <span title="${item.treatment_name || item.treatment_code}">${item.treatment_code}</span>
+            <span title="${escHtml(item.service_name || item.service_code)}">${escHtml(item.service_code)}</span>
             <span>${fmt$(item.old_price)}</span>
             <span style="color:var(--primary);font-weight:600">${fmt$(item.suggested_price)}</span>
-            <span style="color:#16a34a">${fmt$(item.potential_uplift)}</span>
-            <span class="status-badge ${item.status || 'pending'}">${item.status === 'implemented' ? '&#10003; Done' : item.status === 'skipped' ? 'Skipped' : 'Pending'}</span>
+            <span style="color:#16a34a">${fmt$(item.expected_annual_uplift)}</span>
+            <span>${item.status === 'approved' ? '<span class="status-badge implemented">&#10003; Approved</span>' : item.status === 'dismissed' ? '<span class="status-badge skipped">Dismissed</span>' : '<button onclick="approveQueueItem('+item.id+')" style="background:#16a34a;color:#fff;border:none;padding:2px 8px;border-radius:4px;font-size:0.7rem;cursor:pointer;margin-right:3px">&#10003;</button><button onclick="dismissQueueItem('+item.id+')" style="background:#ef4444;color:#fff;border:none;padding:2px 8px;border-radius:4px;font-size:0.7rem;cursor:pointer">&#10005;</button>'}</span>
           </div>
         `).join('')}
       </div>
@@ -5163,6 +5162,33 @@ window.openCampaignAnalytics = async function(type) {
 
 window.closeCampaignModal = function() {
   document.getElementById('campaignModal').classList.remove('open');
+};
+
+window.approveQueueItem = async function(queueId) {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/rpc/approve_recommendation`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_queue_id: queueId, p_user_id: '00000000-0000-0000-0000-000000000000' })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const row = document.querySelector(`button[onclick="approveQueueItem(${queueId})"]`)?.closest('.items-list-row');
+    if (row) row.querySelector('span:last-child').innerHTML = '<span class="status-badge implemented">&#10003; Approved</span>';
+  } catch(e) { console.error('Approve failed:', e); alert('Approve failed: ' + e.message); }
+};
+
+window.dismissQueueItem = async function(queueId) {
+  try {
+    const reason = prompt('Reason for dismissal (optional):') || 'Dismissed by user';
+    const res = await fetch(`${SB_URL}/rest/v1/rpc/dismiss_recommendation`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_queue_id: queueId, p_reason: reason })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const row = document.querySelector(`button[onclick="dismissQueueItem(${queueId})"]`)?.closest('.items-list-row');
+    if (row) row.querySelector('span:last-child').innerHTML = '<span class="status-badge skipped">Dismissed</span>';
+  } catch(e) { console.error('Dismiss failed:', e); alert('Dismiss failed: ' + e.message); }
 };
 
 // Store campaign items for activation
@@ -5288,12 +5314,14 @@ async function loadShoppables() {
       document.getElementById('c4ProgressFill').style.width = pct + '%';
       document.getElementById('c4ProgressLabel').textContent = camp.implemented_items + '/' + camp.total_items + ' implemented';
 
-      // Load campaign items
-      const itemsRes = await fetch(SB_URL + '/rest/v1/campaign_items?select=*&campaign_id=eq.' + camp.id + '&order=potential_uplift.desc', {
+      // Load approval queue items
+      const itemsRes = await fetch(SB_URL + '/rest/v1/std_approval_queue?select=*&campaign_id=eq.' + camp.id + '&order=expected_annual_uplift.desc&clinic_id=eq.rosslyn', {
         headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
       });
       const items = await itemsRes.json();
       if (!items || !items.length) return;
+      // Normalize field names for downstream rendering
+      items.forEach(i => { i.potential_uplift = i.expected_annual_uplift; i.treatment_code = i.service_code; i.treatment_name = i.service_name; });
       window.c4Items = items;
 
       const drops = items.filter(i => i.potential_uplift < 0);
@@ -5609,12 +5637,20 @@ window.activateShoppables = async function() {
     const [camp] = await res.json();
     if (!camp) throw new Error('Failed to create campaign');
     const campaignItems = items.map(item => ({
-      campaign_id: camp.id, treatment_code: item.treatment_code,
-      treatment_name: item.treatment_name, old_price: item.old_price,
-      suggested_price: item.suggested_price, annual_volume: item.annual_volume || 0,
-      potential_uplift: item.potential_uplift || 0
+      clinic_id: 'rosslyn',
+      campaign_id: camp.id,
+      service_code: item.treatment_code || item.service_code,
+      service_name: item.treatment_name || item.service_name,
+      old_price: item.old_price,
+      suggested_price: item.suggested_price,
+      price_increase_pct: item.old_price > 0 ? ((item.suggested_price - item.old_price) / item.old_price * 100) : 0,
+      expected_monthly_uplift: (item.potential_uplift || 0) / 12,
+      expected_annual_uplift: item.potential_uplift || 0,
+      volume_risk: 'low',
+      status: 'pending',
+      priority: 1
     }));
-    await fetch(SB_URL + '/rest/v1/campaign_items', {
+    await fetch(SB_URL + '/rest/v1/std_approval_queue', {
       method: 'POST',
       headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify(campaignItems)
@@ -5757,23 +5793,9 @@ var calDayModal = null;
 
 async function calGetCosts(){
   if(calCostsCache) return calCostsCache;
-  var c={},off=0;
-  while(true){
-    var r=await fetch(SB_URL+"/rest/v1/items?select=code,unit_cost&offset="+off+"&limit=1000",{headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}});
-    var d=await r.json();
-    if(!d.length) break;
-    d.forEach(function(item){
-      if(item.unit_cost&&item.code){
-        c[item.code]=item.unit_cost;
-        var s=item.code.replace(/[A-Za-z]+$/,"");
-        if(s) c[s]=item.unit_cost;
-      }
-    });
-    off+=1000;
-    if(d.length<1000) break;
-  }
-  calCostsCache=c;
-  return c;
+  // std_services has no unit_cost column; return empty costs cache
+  calCostsCache = {};
+  return calCostsCache;
 }
 
 function calFmt(n){return n>=1000?"$"+(n/1000).toFixed(1)+"k":"$"+n.toFixed(0);}
