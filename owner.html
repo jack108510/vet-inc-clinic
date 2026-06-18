@@ -509,25 +509,33 @@ body {
 <section id="tab-dashboard" class="section active">
   <div class="section-header">
     <div class="section-title">My Dashboard</div>
-    <div class="section-sub">Rosslyn Veterinary Clinic · Updated June 18, 2026</div>
+    <div class="section-sub" id="dash-sub">Rosslyn Veterinary Clinic · Loading…</div>
   </div>
 
-  <div class="health-banner">
+  <!-- Health banner -->
+  <div class="health-banner" id="health-banner">
     <div class="health-score-circle">
-      <div class="health-score-val">74</div>
+      <div class="health-score-val" id="health-score-val">…</div>
       <div class="health-score-label">Score</div>
     </div>
     <div class="health-text">
-      <h3>Pricing Health: Good</h3>
-      <p>6 items are currently behind inflation or below market rate. Approving the Q2 review would bring your score to <strong>91</strong>.</p>
+      <h3 id="health-title">Pricing Health</h3>
+      <p id="health-desc">Loading…</p>
     </div>
+    <div id="health-action" style="margin-left:auto;flex-shrink:0"></div>
   </div>
 
-  <div class="kpi-grid">
+  <!-- KPI grid — 4 cards -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi-card">
       <div class="kpi-label">Annual Revenue</div>
       <div class="kpi-value" id="kpi-annual-revenue">…</div>
       <div class="kpi-sub">Last 365 days · Rosslyn</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Daily Revenue</div>
+      <div class="kpi-value" id="kpi-daily-avg">…</div>
+      <div class="kpi-sub" id="kpi-daily-sub">vs daily target</div>
     </div>
     <div class="kpi-card green">
       <div class="kpi-label">Recovered via Vet INC</div>
@@ -537,37 +545,31 @@ body {
     <div class="kpi-card orange">
       <div class="kpi-label">Pending Approval</div>
       <div class="kpi-value" id="kpi-pending-uplift">…</div>
-      <div class="kpi-sub">Est. annual uplift if current review approved</div>
-      <div class="kpi-delta" id="kpi-pending-count" style="color:var(--orange)">→ … items awaiting your sign-off</div>
+      <div class="kpi-sub" id="kpi-pending-count">… items awaiting sign-off</div>
     </div>
   </div>
 
+  <!-- Revenue chart -->
   <div class="card">
-    <div class="card-title">What Happens Next</div>
-    <div style="display:flex;flex-direction:column;gap:0.85rem">
-      <div style="display:flex;align-items:flex-start;gap:0.75rem">
-        <div style="width:28px;height:28px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.8rem;font-weight:800;color:var(--primary)">1</div>
-        <div>
-          <div style="font-size:0.88rem;font-weight:700;color:var(--text)">Review &amp; approve this quarter's price changes</div>
-          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">6 items waiting · takes about 2 minutes</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:0.75rem">
-        <div style="width:28px;height:28px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.8rem;font-weight:800;color:var(--green)">2</div>
-        <div>
-          <div style="font-size:0.88rem;font-weight:700;color:var(--text)">Prices update in AVImark automatically</div>
-          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">No manual entry — Vet INC handles the bulk update</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:0.75rem">
-        <div style="width:28px;height:28px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.8rem;font-weight:800;color:var(--muted)">3</div>
-        <div>
-          <div style="font-size:0.88rem;font-weight:700;color:var(--muted)">Next review: September 2026</div>
-          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">You'll get an email when it's ready</div>
-        </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="card-title" style="margin:0">Daily Revenue — Last 30 Days</div>
+      <div style="display:flex;gap:1rem;font-size:0.75rem;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--primary)"></span>Revenue</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:18px;height:2px;background:#fbbf24"></span>Target</span>
       </div>
     </div>
+    <div id="revenue-chart-wrap" style="width:100%;min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.85rem">Loading chart…</div>
   </div>
+
+  <!-- Pending action callout (shown if items pending) -->
+  <div id="pending-callout" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--orange);border-radius:12px;padding:1rem 1.25rem;display:none;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.5rem">
+    <div>
+      <div style="font-size:0.88rem;font-weight:700;color:#92400e" id="callout-title">You have pricing items to review</div>
+      <div style="font-size:0.78rem;color:#b45309;margin-top:2px" id="callout-sub">Takes about 2 minutes</div>
+    </div>
+    <button onclick="document.getElementById('tab-btn-approve').click()" style="background:var(--orange);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap">Review Now →</button>
+  </div>
+
 </section>
 
 <!-- ─────────────────────── HISTORY TAB ─────────────────────── -->
@@ -840,17 +842,85 @@ async function init() {
   const recovered = approvals.reduce((s, a) => s + Number(a.est_uplift), 0);
   if (el('kpi-recovered')) el('kpi-recovered').textContent = '$' + recovered.toLocaleString();
   if (el('kpi-pending-uplift')) el('kpi-pending-uplift').textContent = '+$' + totalUplift.toLocaleString();
-  if (el('kpi-pending-count')) el('kpi-pending-count').textContent = '→ ' + ITEMS.length + ' item' + (ITEMS.length !== 1 ? 's' : '') + ' awaiting your sign-off';
+  if (el('kpi-pending-count')) el('kpi-pending-count').textContent = ITEMS.length + ' item' + (ITEMS.length !== 1 ? 's' : '') + ' awaiting sign-off';
+
+  // Pending callout
+  if (ITEMS.length > 0) {
+    const callout = el('pending-callout');
+    callout.style.display = 'flex';
+    el('callout-title').textContent = 'You have ' + ITEMS.length + ' pricing item' + (ITEMS.length !== 1 ? 's' : '') + ' ready for review';
+    el('callout-sub').textContent = 'Est. +$' + totalUplift.toLocaleString() + '/yr if approved · takes about 2 minutes';
+  }
 
   // ─── Revenue (Dashboard) ───
-  const revRes = await sbFetch('/rest/v1/csi_pf_totals?select=ros&order=day.desc&limit=365');
+  const revRes = await sbFetch('/rest/v1/csi_pf_totals?select=mdy,ros,ros_target&order=day.desc&limit=365');
   if (revRes.ok) {
     const rows = await revRes.json();
+    const withData = rows.filter(r => r.ros !== null && Number(r.ros) > 0);
     const annual = rows.reduce((s, r) => s + (Number(r.ros) || 0), 0);
+    const avgDaily = withData.length ? (withData.reduce((s, r) => s + Number(r.ros), 0) / withData.length) : 0;
+    const target = withData.length && withData[0].ros_target ? Number(withData[0].ros_target) : 0;
+
     if (el('kpi-annual-revenue')) {
       el('kpi-annual-revenue').textContent = annual >= 1000000
         ? '$' + (annual / 1000000).toFixed(2) + 'M'
         : '$' + Math.round(annual / 1000) + 'K';
+    }
+    if (el('kpi-daily-avg')) {
+      el('kpi-daily-avg').textContent = '$' + Math.round(avgDaily).toLocaleString();
+      if (el('kpi-daily-sub') && target > 0) {
+        const pct = Math.round((avgDaily / target) * 100);
+        const color = pct >= 100 ? 'var(--green)' : pct >= 80 ? 'var(--yellow)' : 'var(--red)';
+        el('kpi-daily-sub').innerHTML = '<span style="color:' + color + ';font-weight:700">' + pct + '% of $' + Math.round(target / 1000) + 'K target</span>';
+      }
+    }
+
+    // Section subtitle
+    if (el('dash-sub')) el('dash-sub').textContent = 'Rosslyn Veterinary Clinic · Updated ' + new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Health score
+    const score = ITEMS.length === 0 ? 97 : ITEMS.length <= 2 ? 88 : ITEMS.length <= 5 ? 76 : 64;
+    const scoreAfter = Math.min(97, score + ITEMS.length * 4);
+    const healthLabel = score >= 90 ? 'Excellent' : score >= 80 ? 'Good' : score >= 70 ? 'Fair' : 'Needs Attention';
+    if (el('health-score-val')) el('health-score-val').textContent = score;
+    if (el('health-title')) el('health-title').textContent = 'Pricing Health: ' + healthLabel;
+    if (el('health-desc') && ITEMS.length > 0) {
+      el('health-desc').innerHTML = ITEMS.length + ' item' + (ITEMS.length !== 1 ? 's are' : ' is') + ' behind inflation or below market. Approving the current review would bring your score to <strong>' + scoreAfter + '</strong>.';
+    } else if (el('health-desc')) {
+      el('health-desc').textContent = 'Your pricing is up to date. No pending items — great work.';
+    }
+    if (ITEMS.length > 0 && el('health-action')) {
+      el('health-action').innerHTML = '<button onclick="document.getElementById(\'tab-btn-approve\').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.82rem;font-weight:700;cursor:pointer">Review Now →</button>';
+    }
+
+    // Revenue bar chart
+    const last30 = rows.slice(0, 30).reverse();
+    if (last30.length && el('revenue-chart-wrap')) {
+      const maxVal = Math.max(...last30.map(r => Math.max(Number(r.ros) || 0, target || 0)), 1);
+      const W = 600, H = 110, PAD = 8, BAR_GAP = 3;
+      const barW = (W - PAD * 2 - BAR_GAP * (last30.length - 1)) / last30.length;
+      const scaleY = (v) => H - PAD - ((v / maxVal) * (H - PAD * 2));
+      const targetY = target ? scaleY(target) : null;
+
+      let bars = last30.map((r, i) => {
+        const v = Math.max(Number(r.ros) || 0, 0);
+        const x = PAD + i * (barW + BAR_GAP);
+        const barH = (v / maxVal) * (H - PAD * 2);
+        const y = H - PAD - barH;
+        const color = target && v >= target ? '#16a34a' : v > 0 ? '#2563eb' : '#e2e8f0';
+        const label = r.mdy ? r.mdy.replace(/\d+-(\d+)-\d+/, '$1') : '';
+        return '<rect x="' + x + '" y="' + (v > 0 ? y : H - PAD) + '" width="' + barW + '" height="' + (v > 0 ? barH : 2) + '" rx="2" fill="' + color + '" opacity="0.85"><title>' + (r.mdy || '') + ': $' + Math.round(v).toLocaleString() + '</title></rect>';
+      }).join('');
+
+      const targetLine = targetY !== null
+        ? '<line x1="' + PAD + '" y1="' + targetY + '" x2="' + (W - PAD) + '" y2="' + targetY + '" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.9"/>'
+        : '';
+
+      el('revenue-chart-wrap').innerHTML =
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="none" style="display:block">' +
+        bars + targetLine + '</svg>' +
+        '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-top:4px;padding:0 8px">' +
+        '<span>' + (last30[0] ? last30[0].mdy : '') + '</span><span>Today</span></div>';
     }
   }
 }
