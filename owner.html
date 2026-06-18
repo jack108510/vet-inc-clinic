@@ -827,9 +827,24 @@ body {
 </div>
 
 <script>
+const SB_URL = 'https://rnqhhzatlxmyvccdvqkr.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30';
+
+const CLINIC_ID = new URLSearchParams(window.location.search).get('clinic') || 'rosslyn';
+const REVIEW_ID = new URLSearchParams(window.location.search).get('review') || 'q2-2026';
+
 const uplifts = { 1: 3200, 2: 1540, 3: 910, 4: 560, 5: 418, 6: 212 };
 const approved = new Set();
 const skipped = new Set();
+
+const ITEMS = {
+  1: { service_code: 'EX001', service_name: 'Comprehensive Exam',          price_old: 89,    price_new: 105,    source: 'ai',         est_uplift: 3200 },
+  2: { service_code: 'DE204', service_name: 'Dental Cleaning (Grade 2)',    price_old: 285,   price_new: 299.99, source: 'ai',         est_uplift: 1540 },
+  3: { service_code: 'SU310', service_name: 'Feline Spay',                  price_old: 310,   price_new: 375,    source: 'consultant', est_uplift: 910  },
+  4: { service_code: 'VA102', service_name: 'Rabies Vaccine',               price_old: 38,    price_new: 44.99,  source: 'ai',         est_uplift: 560  },
+  5: { service_code: 'LA401', service_name: 'Blood Panel — Full Chemistry', price_old: 148,   price_new: 169.99, source: 'ai',         est_uplift: 418  },
+  6: { service_code: 'GR001', service_name: 'Nail Trim',                    price_old: 18,    price_new: 24.99,  source: 'consultant', est_uplift: 212  },
+};
 
 function updateConfirmBar() {
   const count = approved.size;
@@ -889,15 +904,51 @@ function approveAll() {
   updateConfirmBar();
 }
 
-function confirmApproval() {
+async function confirmApproval() {
+  const btn = document.getElementById('confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const rows = [...approved].map(i => ({
+    clinic_id:    CLINIC_ID,
+    review_id:    REVIEW_ID,
+    service_code: ITEMS[i].service_code,
+    service_name: ITEMS[i].service_name,
+    price_old:    ITEMS[i].price_old,
+    price_new:    ITEMS[i].price_new,
+    source:       ITEMS[i].source,
+    est_uplift:   ITEMS[i].est_uplift,
+    status:       'approved'
+  }));
+
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/price_approvals`, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(rows)
+    });
+    if (!res.ok) throw new Error(await res.text());
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Confirm & Apply Changes';
+    alert('Error saving approvals: ' + e.message);
+    return;
+  }
+
   const count = approved.size;
   const uplift = [...approved].reduce((s, i) => s + uplifts[i], 0);
   document.getElementById('modal-detail').innerHTML =
-    `<strong>${count} price changes</strong> approved<br>` +
+    `<strong>${count} price changes</strong> saved to your account<br>` +
     `Estimated annual uplift: <strong style="color:var(--green)">+$${uplift.toLocaleString()}</strong><br>` +
     `<span style="font-size:0.78rem;color:var(--muted)">AVImark update scheduled for tonight</span>`;
   document.getElementById('success-modal').classList.add('active');
   document.getElementById('pending-badge').style.display = 'none';
+  btn.textContent = 'Confirmed ✓';
 }
 
 function showTab(name, btn) {
@@ -925,10 +976,10 @@ function submitSuggestion() {
   ['sug-name','sug-code','sug-current','sug-new','sug-reason'].forEach(id => document.getElementById(id).value = '');
 }
 
-// Auto-open approve tab if URL has ?review param
-if (new URLSearchParams(window.location.search).get('review')) {
-  document.querySelector('.tab-btn').click();
-}
+// Auto-activate approve tab button when coming from email link
+const tabBtn = document.getElementById('tab-btn-approve');
+tabBtn.classList.add('active');
+
 </script>
 </body>
 </html>
