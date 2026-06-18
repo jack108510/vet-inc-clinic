@@ -328,15 +328,7 @@ body {
 .timeline-tag.green { background: #dcfce7; color: var(--green); }
 .timeline-tag.orange { background: #dbeafe; color: var(--primary); }
 
-/* ─── SUGGESTIONS SECTION ─── */
-.suggest-form {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-.suggest-form h3 { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 1rem; }
+/* ─── MAKE A CHANGE SECTION ─── */
 .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 .form-group { flex: 1; min-width: 180px; }
 .form-group label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.4rem; }
@@ -360,23 +352,21 @@ body {
   cursor: pointer; transition: all 0.15s;
 }
 .btn-submit:hover { background: #1d4ed8; }
+.btn-submit:disabled { opacity: 0.45; cursor: default; }
 
-.suggestion-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.1rem 1.4rem;
-  margin-bottom: 0.75rem;
+.svc-result-card {
   display: flex; align-items: center; gap: 1rem;
-  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border); border-radius: 10px;
+  margin-bottom: 0.5rem; cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
 }
-.suggestion-status {
-  font-size: 0.72rem; font-weight: 700;
-  padding: 3px 10px; border-radius: 999px;
-  text-transform: uppercase; letter-spacing: 0.05em;
+.svc-result-card:hover { background: var(--surface2); border-color: var(--primary-light); }
+.svc-change-tag {
+  font-size: 0.7rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.04em;
 }
-.suggestion-status.pending { background: #dbeafe; color: var(--primary); }
-.suggestion-status.submitted { background: #dbeafe; color: var(--primary); }
 
 /* ─── APPROVED MODAL ─── */
 .modal-overlay {
@@ -453,7 +443,7 @@ body {
   </button>
   <button class="tab-btn" onclick="showTab('suggest', this)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Suggest a Change
+    Make a Change
   </button>
 </nav>
 
@@ -587,59 +577,70 @@ body {
 <!-- ─────────────────────── SUGGEST TAB ─────────────────────── -->
 <section id="tab-suggest" class="section">
   <div class="section-header">
-    <div class="section-title">Suggest a Price Change</div>
-    <div class="section-sub">Flag an item you think needs attention — your consultant will review it</div>
+    <div class="section-title">Make a Change</div>
+    <div class="section-sub">Search any service, see real pricing data, and submit a change for approval</div>
   </div>
 
-  <div class="suggest-form">
-    <h3>Submit a suggestion</h3>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Service / Item Name</label>
-        <input type="text" placeholder="e.g. Ultrasound — Abdominal" id="sug-name" />
-      </div>
-      <div class="form-group">
-        <label>Service Code (if known)</label>
-        <input type="text" placeholder="e.g. IM550" id="sug-code" />
-      </div>
+  <!-- Search card -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <div style="position:relative">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="service-search" placeholder="Search by service name or code…" oninput="searchServices(this.value)"
+        style="width:100%;padding:12px 16px 12px 40px;border:1.5px solid var(--border);border-radius:10px;font-size:0.9rem;outline:none;font-family:inherit;color:var(--text);transition:border 0.15s" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" />
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Current Price</label>
-        <input type="text" placeholder="$0.00" id="sug-current" />
-      </div>
-      <div class="form-group">
-        <label>Your Suggested Price</label>
-        <input type="text" placeholder="$0.00" id="sug-new" />
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group" style="flex:2">
-        <label>Reason</label>
-        <textarea placeholder="Why do you think this price should change? (competitors, costs, gut feel — all valid)" id="sug-reason"></textarea>
-      </div>
-    </div>
-    <button class="btn-submit" onclick="submitSuggestion()">Submit Suggestion</button>
+    <div id="search-results" style="margin-top:0.75rem"></div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Your Previous Suggestions</div>
-    <div id="suggestion-list">
-      <div class="suggestion-card">
-        <div style="flex:1">
-          <div style="font-size:0.88rem;font-weight:700;color:var(--text)">Ultrasound — Abdominal</div>
-          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Submitted Mar 3, 2026 · "We're $40 cheaper than the clinic two blocks over"</div>
-        </div>
-        <span class="suggestion-status submitted">Reviewed — included in Q2</span>
+  <!-- Service detail panel (hidden until service selected) -->
+  <div id="service-detail" style="display:none">
+
+    <!-- 3 KPI cards -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.25rem">
+      <div class="kpi-card">
+        <div class="kpi-label">Current Price</div>
+        <div class="kpi-value" id="svc-price">…</div>
+        <div class="kpi-sub">avg last 100 transactions</div>
       </div>
-      <div class="suggestion-card">
-        <div style="flex:1">
-          <div style="font-size:0.88rem;font-weight:700;color:var(--text)">Boarding — Feline (per night)</div>
-          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Submitted Feb 18, 2026 · "Haven't changed this in 3 years"</div>
-        </div>
-        <span class="suggestion-status pending">Under Review</span>
+      <div class="kpi-card">
+        <div class="kpi-label">Annual Visits</div>
+        <div class="kpi-value" id="svc-volume">…</div>
+        <div class="kpi-sub">last 12 months</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Annual Revenue</div>
+        <div class="kpi-value" id="svc-revenue">…</div>
+        <div class="kpi-sub">at current price</div>
       </div>
     </div>
+
+    <!-- Change history for this service -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-title">Price History for This Service</div>
+      <div id="svc-history"><p style="color:var(--muted);font-size:0.85rem">Loading…</p></div>
+    </div>
+
+    <!-- Propose change form -->
+    <div class="card">
+      <div class="card-title">Propose a Price Change</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current Price</label>
+          <input type="text" id="change-current" readonly style="background:var(--surface2);color:var(--muted)" />
+        </div>
+        <div class="form-group">
+          <label>New Price</label>
+          <input type="number" id="change-new" placeholder="0.00" step="0.01" min="0" oninput="calcImpact()" />
+        </div>
+      </div>
+      <div id="impact-preview" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1rem;margin-bottom:0.75rem;font-size:0.85rem;color:var(--text);line-height:1.5"></div>
+      <div class="form-group" style="margin-bottom:1rem">
+        <label>Reason (optional)</label>
+        <textarea id="change-reason" placeholder="Market rate, cost increase, competitor pricing, gut feel — all valid"></textarea>
+      </div>
+      <button class="btn-submit" id="submit-change-btn" onclick="submitPriceChange()" disabled>Submit for Approval</button>
+      <p style="margin-top:0.6rem;font-size:0.75rem;color:var(--muted)">Submitted changes go into your Approve Prices queue for final confirmation.</p>
+    </div>
+
   </div>
 </section>
 
@@ -934,22 +935,192 @@ function showTab(name, btn) {
   btn.classList.add('active');
 }
 
-function submitSuggestion() {
-  const name = el('sug-name').value.trim();
-  if (!name) { alert('Please enter a service name.'); return; }
-  const list = el('suggestion-list');
-  const card = document.createElement('div');
-  card.className = 'suggestion-card';
-  const today = new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-  const reason = el('sug-reason').value.trim();
-  card.innerHTML = '<div style="flex:1"><div style="font-size:0.88rem;font-weight:700;color:var(--text)">' + name + '</div>' +
-    '<div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Submitted ' + today + (reason ? ' · "' + reason + '"' : '') + '</div></div>' +
-    '<span class="suggestion-status pending">Submitted</span>';
-  list.prepend(card);
-  ['sug-name','sug-code','sug-current','sug-new','sug-reason'].forEach(id => el(id).value = '');
+// ─── MAKE A CHANGE ───────────────────────────────────────────────
+let selectedService = null;
+let searchTimer = null;
+
+function searchServices(query) {
+  clearTimeout(searchTimer);
+  const results = el('search-results');
+  if (!query || query.length < 2) { results.innerHTML = ''; return; }
+  results.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:0.25rem 0">Searching…</p>';
+  searchTimer = setTimeout(async () => {
+    const encoded = encodeURIComponent(query);
+    const res = await sbFetch('/rest/v1/services?description=ilike.*' + encoded + '*&amount=gt.0&select=code,description,amount&limit=500');
+    if (!res.ok) { results.innerHTML = ''; return; }
+    const rows = await res.json();
+
+    const byCode = {};
+    rows.forEach(r => {
+      if (!byCode[r.code]) byCode[r.code] = { code: r.code, desc: r.description, amounts: [] };
+      byCode[r.code].amounts.push(Number(r.amount));
+    });
+
+    const services = Object.values(byCode).map(s => ({
+      code: s.code, desc: s.desc,
+      avgPrice: s.amounts.reduce((a, b) => a + b, 0) / s.amounts.length,
+      sampleCount: s.amounts.length
+    })).sort((a, b) => b.sampleCount - a.sampleCount).slice(0, 10);
+
+    if (!services.length) {
+      results.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:0.25rem 0">No services found.</p>';
+      return;
+    }
+
+    results.innerHTML = services.map(s =>
+      '<div class="svc-result-card" onclick="selectService(\'' + s.code + '\', ' + JSON.stringify(s.desc) + ', ' + s.avgPrice.toFixed(4) + ')">' +
+        '<div style="flex:1">' +
+          '<div style="font-size:0.88rem;font-weight:700;color:var(--text)">' + s.desc + '</div>' +
+          '<div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Code: ' + s.code + ' · ' + s.sampleCount + ' sample transactions</div>' +
+        '</div>' +
+        '<div style="text-align:right;flex-shrink:0">' +
+          '<div style="font-size:1rem;font-weight:800;color:var(--primary)">' + fmt$(s.avgPrice) + '</div>' +
+          '<div style="font-size:0.7rem;color:var(--muted)">avg price</div>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+  }, 380);
 }
 
-// Helper needed before submitSuggestion may be called
+async function selectService(code, desc, avgPrice) {
+  selectedService = { code, desc, avgPrice, annualVolume: 0 };
+
+  el('service-detail').style.display = 'block';
+  el('search-results').innerHTML =
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between">' +
+      '<div><strong style="color:var(--text)">' + desc + '</strong> <span style="color:var(--muted);font-size:0.8rem">· ' + code + '</span></div>' +
+      '<button onclick="clearServiceSelection()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:2px 6px">✕ Change</button>' +
+    '</div>';
+
+  el('svc-price').textContent = '…'; el('svc-volume').textContent = '…'; el('svc-revenue').textContent = '…';
+  el('svc-history').innerHTML = '<p style="color:var(--muted);font-size:0.85rem">Loading…</p>';
+  el('change-current').value = fmt$(avgPrice);
+  el('change-new').value = '';
+  el('impact-preview').style.display = 'none';
+  el('submit-change-btn').disabled = true;
+
+  const CUTOFF = new Date(); CUTOFF.setFullYear(CUTOFF.getFullYear() - 1);
+  const cutoff = CUTOFF.toISOString().slice(0, 10) + 'T00:00:00';
+
+  const [priceRes, historyRes, pendingRes] = await Promise.all([
+    sbFetch('/rest/v1/services?code=eq.' + code + '&amount=gt.0&select=amount&order=service_date.desc&limit=100'),
+    sbFetch('/rest/v1/price_approvals?service_code=eq.' + code + '&clinic_id=eq.' + CLINIC_ID + '&select=*&order=approved_at.desc'),
+    sbFetch('/rest/v1/price_recommendations?service_code=eq.' + code + '&clinic_id=eq.' + CLINIC_ID + '&status=eq.pending&select=*')
+  ]);
+
+  const countRes = await fetch(SB_URL + '/rest/v1/services?code=eq.' + code + '&service_date=gte.' + cutoff + '&amount=gt.0&select=id',
+    { method: 'HEAD', headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'count=exact' } });
+
+  if (priceRes.ok) {
+    const prices = await priceRes.json();
+    if (prices.length) { avgPrice = prices.reduce((s, r) => s + Number(r.amount), 0) / prices.length; }
+  }
+  el('svc-price').textContent = fmt$(avgPrice);
+  el('change-current').value = fmt$(avgPrice);
+  selectedService.avgPrice = avgPrice;
+
+  const cr = countRes.headers.get('content-range');
+  const annualCount = cr ? (parseInt(cr.split('/')[1]) || 0) : 0;
+  selectedService.annualVolume = annualCount;
+  el('svc-volume').textContent = annualCount.toLocaleString();
+  el('svc-revenue').textContent = '$' + Math.round(annualCount * avgPrice).toLocaleString();
+
+  const approvals = historyRes.ok ? await historyRes.json() : [];
+  const pending = pendingRes.ok ? await pendingRes.json() : [];
+
+  let histHtml = '';
+  pending.forEach(p => {
+    histHtml += '<div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid var(--border)">' +
+      '<span class="svc-change-tag" style="background:#dbeafe;color:var(--primary)">Pending</span>' +
+      '<div style="flex:1;font-size:0.85rem;color:var(--muted)">Awaiting approval</div>' +
+      '<div style="font-size:0.9rem;font-weight:700;color:var(--primary)">' + fmt$(p.price_old) + ' → ' + fmt$(p.price_new) + '</div>' +
+    '</div>';
+  });
+  approvals.forEach(a => {
+    const date = new Date(a.approved_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+    const impact = Math.round(Number(a.annual_volume || 0) * (Number(a.price_new) - Number(a.price_old)));
+    histHtml += '<div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid var(--border)">' +
+      '<span class="svc-change-tag" style="background:#dcfce7;color:var(--green)">Applied</span>' +
+      '<div style="flex:1;font-size:0.85rem;color:var(--muted)">' + date + ' · ' + (a.source === 'owner' ? 'Owner' : a.source === 'consultant' ? 'Consultant' : 'AI') + '</div>' +
+      '<div style="font-size:0.9rem;font-weight:700;color:var(--green)">' + fmt$(a.price_old) + ' → ' + fmt$(a.price_new) +
+        (impact ? ' <span style="font-size:0.75rem;color:var(--muted)">(+$' + Math.abs(impact).toLocaleString() + '/yr)</span>' : '') + '</div>' +
+    '</div>';
+  });
+
+  el('svc-history').innerHTML = histHtml || '<p style="color:var(--muted);font-size:0.85rem;padding:0.25rem 0">No price changes recorded for this service.</p>';
+}
+
+function clearServiceSelection() {
+  selectedService = null;
+  el('service-detail').style.display = 'none';
+  el('search-results').innerHTML = '';
+  el('service-search').value = '';
+}
+
+function calcImpact() {
+  const newPrice = parseFloat(el('change-new').value);
+  const preview = el('impact-preview');
+  const btn = el('submit-change-btn');
+  if (!selectedService || isNaN(newPrice) || newPrice <= 0) { preview.style.display = 'none'; btn.disabled = true; return; }
+
+  const delta = newPrice - selectedService.avgPrice;
+  const impact = Math.round(delta * selectedService.annualVolume);
+  const sign = delta >= 0 ? '+' : '';
+  const impactColor = delta >= 0 ? 'var(--green)' : 'var(--primary)';
+
+  preview.style.display = 'block';
+  preview.innerHTML =
+    '<strong>' + selectedService.desc + '</strong><br>' +
+    fmt$(selectedService.avgPrice) + ' → <strong>' + fmt$(newPrice) + '</strong>' +
+    ' <span style="color:' + impactColor + ';font-weight:700">(' + sign + '$' + Math.abs(impact).toLocaleString() + '/yr)</span>' +
+    '<br><span style="color:var(--muted);font-size:0.78rem">Based on ' + selectedService.annualVolume.toLocaleString() + ' visits/yr · ' +
+    sign + '$' + (Math.abs(delta)).toFixed(2) + ' per visit</span>';
+
+  btn.disabled = false;
+}
+
+async function submitPriceChange() {
+  if (!selectedService) return;
+  const newPrice = parseFloat(el('change-new').value);
+  if (!newPrice || newPrice <= 0) { alert('Enter a valid new price.'); return; }
+  const btn = el('submit-change-btn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const row = {
+    clinic_id: CLINIC_ID,
+    review_id: 'owner-' + new Date().toISOString().slice(0, 7),
+    service_code: selectedService.code,
+    service_name: selectedService.desc,
+    price_old: parseFloat(selectedService.avgPrice.toFixed(2)),
+    price_new: parseFloat(newPrice.toFixed(2)),
+    source: 'owner',
+    annual_volume: selectedService.annualVolume,
+    est_uplift: Math.round((newPrice - selectedService.avgPrice) * selectedService.annualVolume),
+    status: 'pending'
+  };
+
+  const res = await fetch(SB_URL + '/rest/v1/price_recommendations', {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify(row)
+  });
+
+  if (!res.ok) {
+    alert('Error: ' + await res.text());
+    btn.disabled = false; btn.textContent = 'Submit for Approval';
+    return;
+  }
+
+  btn.textContent = 'Submitted ✓';
+  el('svc-history').innerHTML = '<div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid var(--border)">' +
+    '<span class="svc-change-tag" style="background:#dbeafe;color:var(--primary)">Pending</span>' +
+    '<div style="flex:1;font-size:0.85rem;color:var(--muted)">Awaiting approval</div>' +
+    '<div style="font-size:0.9rem;font-weight:700;color:var(--primary)">' + fmt$(row.price_old) + ' → ' + fmt$(row.price_new) + '</div>' +
+    '</div>' + el('svc-history').innerHTML;
+  setTimeout(() => { btn.textContent = 'Submit for Approval'; el('change-new').value = ''; el('change-reason').value = ''; el('impact-preview').style.display = 'none'; btn.disabled = true; }, 2500);
+}
+
+// Helper
 function el(id) { return document.getElementById(id); }
 
 // Tab routing
