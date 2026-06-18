@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vet INC — Clinic Owner Portal</title>
+<link rel="icon" href="data:," />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f0f6ff;
+  --surface: #ffffff;
+  --surface2: #eff6ff;
+  --border: #dbeafe;
+  --primary: #2563eb;
+  --primary-light: #60a5fa;
+  --text: #1e3a5f;
+  --muted: #64748b;
+  --green: #16a34a;
+  --red: #ef4444;
+  --purple: #7c3aed;
+  --emerald: #059669;
+  --orange: #ea580c;
+  --yellow: #d97706;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* HEADER */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 1px 12px rgba(37,99,235,.07);
+}
+.header-left { display: flex; align-items: center; gap: 1rem; }
+.logo-wrap { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(37,99,235,.25);
+}
+.logo-text { font-size: 1.1rem; font-weight: 800; color: var(--text); }
+.logo-text span { color: var(--primary); }
+.header-divider { width: 1px; height: 24px; background: var(--border); }
+.clinic-name { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+.header-right { display: flex; align-items: center; gap: 0.75rem; }
+.owner-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--primary); font-size: 0.78rem; font-weight: 600;
+  padding: 6px 14px; border-radius: 8px;
+}
+
+/* TAB NAV */
+.tab-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 2rem;
+  gap: 4px;
+  height: 52px;
+}
+.tab-btn {
+  display: flex; align-items: center; gap: 7px;
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 0.85rem; font-weight: 600;
+  padding: 7px 16px; border-radius: 8px;
+  transition: all 0.15s; letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.tab-btn:hover { background: var(--surface2); color: var(--text); }
+.tab-btn.active { background: var(--primary); color: #fff; }
+.tab-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+/* SECTIONS */
+.section { display: none; padding: 2rem; animation: fadeIn 0.2s ease; max-width: 1200px; margin: 0 auto; }
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* KPI CARDS */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem; margin-bottom: 2rem;
+}
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.4rem 1.5rem;
+  position: relative; overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.kpi-card:hover { box-shadow: 0 8px 28px rgba(37,99,235,.11); transform: translateY(-2px); }
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+}
+.kpi-card.green::before { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.kpi-card.orange::before { background: linear-gradient(90deg, #ea580c, #fb923c); }
+.kpi-label { font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
+.kpi-value { font-size: 1.75rem; font-weight: 900; color: var(--text); line-height: 1.1; }
+.kpi-sub { font-size: 0.76rem; color: var(--muted); margin-top: 0.35rem; }
+.kpi-delta { font-size: 0.8rem; font-weight: 700; margin-top: 0.35rem; }
+.kpi-delta.up { color: var(--green); }
+.kpi-delta.down { color: var(--red); }
+
+/* SECTION HEADERS */
+.section-header { margin-bottom: 1.5rem; }
+.section-title { font-size: 1.2rem; font-weight: 800; color: var(--text); }
+.section-sub { font-size: 0.82rem; color: var(--muted); margin-top: 0.25rem; }
+
+/* CARDS */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(37,99,235,.04);
+  margin-bottom: 1.5rem;
+}
+.card-title {
+  font-size: 0.7rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;
+}
+
+/* ─── APPROVAL SECTION ─── */
+.review-hero {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb, #3b82f6);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  color: #fff;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.review-hero-text h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.4rem; }
+.review-hero-text p { font-size: 0.9rem; opacity: 0.85; }
+.review-stats { display: flex; gap: 2rem; flex-wrap: wrap; }
+.review-stat { text-align: center; }
+.review-stat-val { font-size: 1.8rem; font-weight: 900; }
+.review-stat-label { font-size: 0.72rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.approval-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: box-shadow 0.15s;
+  flex-wrap: wrap;
+}
+.approval-item:hover { box-shadow: 0 4px 20px rgba(37,99,235,.09); }
+.approval-item.approved { border-left: 4px solid var(--green); background: #f0fdf4; }
+.approval-item.skipped { border-left: 4px solid var(--border); opacity: 0.55; }
+
+.ai-chip {
+  font-size: 0.65rem; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.ai-chip.ai { background: #ede9fe; color: var(--purple); }
+.ai-chip.consultant { background: #dbeafe; color: var(--primary); }
+
+.item-info { flex: 1; min-width: 180px; }
+.item-name { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+.item-code { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+.item-reason { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+.price-change { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+.price-old { font-size: 0.9rem; color: var(--muted); text-decoration: line-through; }
+.price-arrow { color: var(--muted); font-size: 0.8rem; }
+.price-new { font-size: 1rem; font-weight: 800; color: var(--primary); }
+.price-delta { font-size: 0.78rem; font-weight: 700; color: var(--green); }
+.price-uplift { font-size: 0.75rem; color: var(--muted); }
+
+.item-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.btn-approve {
+  background: var(--green); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 7px 16px; font-size: 0.82rem; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-approve:hover { background: #15803d; }
+.btn-approve.active { background: #dcfce7; color: var(--green); border: 1.5px solid var(--green); }
+.btn-skip {
+  background: none; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 14px; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-skip:hover { background: var(--surface2); }
+
+.approve-all-bar {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.approve-all-bar p { font-size: 0.85rem; color: var(--muted); }
+.approve-all-bar strong { color: var(--text); }
+
+.btn-approve-all {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #fff; border: none; border-radius: 10px;
+  padding: 10px 24px; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 4px 14px rgba(37,99,235,.3);
+  white-space: nowrap;
+}
+.btn-approve-all:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,.35); }
+
+.confirm-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 -4px 20px rgba(37,99,235,.08);
+  flex-wrap: wrap;
+  margin: 0 -2rem;
+}
+.confirm-summary { font-size: 0.9rem; color: var(--text); }
+.confirm-summary span { font-weight: 800; color: var(--primary); }
+.btn-confirm {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #fff; border: none; border-radius: 10px;
+  padding: 12px 32px; font-size: 1rem; font-weight: 800;
+  cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 4px 14px rgba(22,163,74,.3);
+}
+.btn-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(22,163,74,.35); }
+.btn-confirm:disabled { background: #94a3b8; box-shadow: none; cursor: not-allowed; transform: none; }
+
+/* ─── DASHBOARD SECTION ─── */
+.health-banner {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  color: #fff;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.health-score-circle {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 5px solid rgba(255,255,255,0.3);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+.health-score-val { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+.health-score-label { font-size: 0.6rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.05em; }
+.health-text h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 0.3rem; }
+.health-text p { font-size: 0.85rem; opacity: 0.85; }
+
+/* ─── HISTORY SECTION ─── */
+.timeline { }
+.timeline-item {
+  display: flex; gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.timeline-item:last-child { border-bottom: none; }
+.timeline-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--primary); flex-shrink: 0; margin-top: 5px;
+}
+.timeline-dot.green { background: var(--green); }
+.timeline-dot.orange { background: var(--orange); }
+.timeline-date { font-size: 0.75rem; color: var(--muted); width: 90px; flex-shrink: 0; padding-top: 2px; }
+.timeline-content { flex: 1; }
+.timeline-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+.timeline-detail { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+.timeline-tag {
+  display: inline-block;
+  font-size: 0.65rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-right: 4px; margin-top: 4px;
+}
+.timeline-tag.blue { background: #dbeafe; color: var(--primary); }
+.timeline-tag.green { background: #dcfce7; color: var(--green); }
+.timeline-tag.orange { background: #ffedd5; color: var(--orange); }
+
+/* ─── SUGGESTIONS SECTION ─── */
+.suggest-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.suggest-form h3 { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 1rem; }
+.form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.form-group { flex: 1; min-width: 180px; }
+.form-group label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.4rem; }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 0.85rem; color: var(--text);
+  background: var(--surface);
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+.form-group textarea { resize: vertical; min-height: 70px; }
+.btn-submit {
+  background: var(--primary); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 9px 20px; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-submit:hover { background: #1d4ed8; }
+
+.suggestion-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 0.75rem;
+  display: flex; align-items: center; gap: 1rem;
+  flex-wrap: wrap;
+}
+.suggestion-status {
+  font-size: 0.72rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.suggestion-status.pending { background: #fef9c3; color: var(--yellow); }
+.suggestion-status.submitted { background: #dbeafe; color: var(--primary); }
+
+/* ─── APPROVED MODAL ─── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 3rem;
+  text-align: center;
+  max-width: 440px;
+  width: 90%;
+  animation: fadeIn 0.25s ease;
+}
+.modal-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+.modal h2 { font-size: 1.4rem; font-weight: 800; color: var(--text); margin-bottom: 0.5rem; }
+.modal p { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; }
+.modal-detail { background: var(--surface2); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--text); }
+.btn-close-modal {
+  background: var(--primary); color: #fff;
+  border: none; border-radius: 10px;
+  padding: 12px 32px; font-size: 0.95rem; font-weight: 700;
+  cursor: pointer;
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .header { padding: 0 1rem; }
+  .section { padding: 1rem; }
+  .review-hero { padding: 1.25rem; }
+  .tab-nav { padding: 0 0.5rem; overflow-x: auto; }
+  .confirm-bar { margin: 0 -1rem; padding: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="logo-text">Vet <span>INC</span></div>
+    </div>
+    <div class="header-divider"></div>
+    <div class="clinic-name">Rosslyn Veterinary Clinic</div>
+  </div>
+  <div class="header-right">
+    <div class="owner-badge">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Owner Portal
+    </div>
+  </div>
+</header>
+
+<!-- TAB NAV -->
+<nav class="tab-nav">
+  <button class="tab-btn" onclick="showTab('approve', this)" id="tab-btn-approve">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Approve Prices
+    <span class="tab-badge" id="pending-badge">6</span>
+  </button>
+  <button class="tab-btn" onclick="showTab('dashboard', this)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+    My Dashboard
+  </button>
+  <button class="tab-btn" onclick="showTab('history', this)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Price History
+  </button>
+  <button class="tab-btn" onclick="showTab('suggest', this)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Suggest a Change
+  </button>
+</nav>
+
+<!-- ─────────────────────── APPROVE TAB ─────────────────────── -->
+<section id="tab-approve" class="section active">
+
+  <div class="review-hero">
+    <div class="review-hero-text">
+      <h2>Q2 Pricing Review Ready</h2>
+      <p>Generated June 18, 2026 · Based on 365 days of transaction data and current CPI</p>
+    </div>
+    <div class="review-stats">
+      <div class="review-stat">
+        <div class="review-stat-val">6</div>
+        <div class="review-stat-label">Items Flagged</div>
+      </div>
+      <div class="review-stat">
+        <div class="review-stat-val">+$6,840</div>
+        <div class="review-stat-label">Est. Annual Uplift</div>
+      </div>
+      <div class="review-stat">
+        <div class="review-stat-val">~2 min</div>
+        <div class="review-stat-label">To Review</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="approve-all-bar">
+    <p>Reviewed by Vet INC AI and your consultant. <strong>You have the final say.</strong> Accept all, or review each item below.</p>
+    <button class="btn-approve-all" onclick="approveAll()">✓ Accept All 6 Changes</button>
+  </div>
+
+  <div id="approval-list">
+
+    <div class="approval-item" id="item-1">
+      <span class="ai-chip ai">AI</span>
+      <div class="item-info">
+        <div class="item-name">Comprehensive Exam</div>
+        <div class="item-code">Code: EX001 · Last changed 847 days ago</div>
+        <div class="item-reason">Price hasn't kept pace with CPI — 18.4% behind inflation since last update.</div>
+      </div>
+      <div class="price-change">
+        <span class="price-old">$89.00</span>
+        <span class="price-arrow">→</span>
+        <span class="price-new">$105.00</span>
+        <span class="price-delta">+$16</span>
+      </div>
+      <div class="price-uplift">~$3,200 / yr</div>
+      <div class="item-actions">
+        <button class="btn-approve" id="approve-1" onclick="toggleApprove(1)">✓ Approve</button>
+        <button class="btn-skip" onclick="skipItem(1)">Skip</button>
+      </div>
+    </div>
+
+    <div class="approval-item" id="item-2">
+      <span class="ai-chip ai">AI</span>
+      <div class="item-info">
+        <div class="item-name">Dental Cleaning (Grade 2)</div>
+        <div class="item-code">Code: DE204 · Last changed 612 days ago</div>
+        <div class="item-reason">Below .99 price point — rounding up captures missed margin on 220 annual transactions.</div>
+      </div>
+      <div class="price-change">
+        <span class="price-old">$285.00</span>
+        <span class="price-arrow">→</span>
+        <span class="price-new">$299.99</span>
+        <span class="price-delta">+$14.99</span>
+      </div>
+      <div class="price-uplift">~$1,540 / yr</div>
+      <div class="item-actions">
+        <button class="btn-approve" id="approve-2" onclick="toggleApprove(2)">✓ Approve</button>
+        <button class="btn-skip" onclick="skipItem(2)">Skip</button>
+      </div>
+    </div>
+
+    <div class="approval-item" id="item-3">
+      <span class="ai-chip consultant">Consultant</span>
+      <div class="item-info">
+        <div class="item-name">Feline Spay</div>
+        <div class="item-code">Code: SU310 · Last changed 1,104 days ago</div>
+        <div class="item-reason">Flagged by your consultant — regional average is $380–$420. Currently below market.</div>
+      </div>
+      <div class="price-change">
+        <span class="price-old">$310.00</span>
+        <span class="price-arrow">→</span>
+        <span class="price-new">$375.00</span>
+        <span class="price-delta">+$65</span>
+      </div>
+      <div class="price-uplift">~$910 / yr</div>
+      <div class="item-actions">
+        <button class="btn-approve" id="approve-3" onclick="toggleApprove(3)">✓ Approve</button>
+        <button class="btn-skip" onclick="skipItem(3)">Skip</button>
+      </div>
+    </div>
+
+    <div class="approval-item" id="item-4">
+      <span class="ai-chip ai">AI</span>
+      <div class="item-info">
+        <div class="item-name">Rabies Vaccine</div>
+        <div class="item-code">Code: VA102 · Last changed 390 days ago</div>
+        <div class="item-reason">Supplier cost increased 12% in Feb 2026. Suggested 5% margin bump on top of cost pass-through.</div>
+      </div>
+      <div class="price-change">
+        <span class="price-old">$38.00</span>
+        <span class="price-arrow">→</span>
+        <span class="price-new">$44.99</span>
+        <span class="price-delta">+$6.99</span>
+      </div>
+      <div class="price-uplift">~$560 / yr</div>
+      <div class="item-actions">
+        <button class="btn-approve" id="approve-4" onclick="toggleApprove(4)">✓ Approve</button>
+        <button class="btn-skip" onclick="skipItem(4)">Skip</button>
+      </div>
+    </div>
+
+    <div class="approval-item" id="item-5">
+      <span class="ai-chip ai">AI</span>
+      <div class="item-info">
+        <div class="item-name">Blood Panel — Full Chemistry</div>
+        <div class="item-code">Code: LA401 · Last changed 501 days ago</div>
+        <div class="item-reason">14.2% behind CPI since last price change. High-volume item — recovery significant.</div>
+      </div>
+      <div class="price-change">
+        <span class="price-old">$148.00</span>
+        <span class="price-arrow">→</span>
+        <span class="price-new">$169.99</span>
+        <span class="price-delta">+$21.99</span>
+      </div>
+      <div class="price-uplift">~$418 / yr</div>
+      <div class="item-actions">
+        <button class="btn-approve" id="approve-5" onclick="toggleApprove(5)">✓ Approve</button>
+        <button class="btn-skip" onclick="skipItem(5)">Skip</button>
+      </div>
+    </div>
+
+    <div class="approval-item" id="item-6">
+      <span class="ai-chip consultant">Consultant</span>
+      <div class="item-info">
+        <div class="item-name">Nail Trim</div>
+        <div class="item-code">Code: GR001 · Last changed 1,890 days ago</div>
+        <div class="item-reason">Not changed in over 5 years. Below market by ~$8. High volume makes this worth addressing.</div>
+      </div>
+      <div class="price-change">
+        <span class="price-old">$18.00</span>
+        <span class="price-arrow">→</span>
+        <span class="price-new">$24.99</span>
+        <span class="price-delta">+$6.99</span>
+      </div>
+      <div class="price-uplift">~$212 / yr</div>
+      <div class="item-actions">
+        <button class="btn-approve" id="approve-6" onclick="toggleApprove(6)">✓ Approve</button>
+        <button class="btn-skip" onclick="skipItem(6)">Skip</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STICKY CONFIRM BAR -->
+  <div class="confirm-bar">
+    <div class="confirm-summary">
+      <span id="approved-count">0</span> of 6 approved · Est. uplift: <span id="approved-uplift">$0</span> / yr
+    </div>
+    <button class="btn-confirm" id="confirm-btn" onclick="confirmApproval()" disabled>
+      Confirm &amp; Apply Changes
+    </button>
+  </div>
+
+</section>
+
+<!-- ─────────────────────── DASHBOARD TAB ─────────────────────── -->
+<section id="tab-dashboard" class="section">
+  <div class="section-header">
+    <div class="section-title">My Dashboard</div>
+    <div class="section-sub">Rosslyn Veterinary Clinic · Updated June 18, 2026</div>
+  </div>
+
+  <div class="health-banner">
+    <div class="health-score-circle">
+      <div class="health-score-val">74</div>
+      <div class="health-score-label">Score</div>
+    </div>
+    <div class="health-text">
+      <h3>Pricing Health: Good</h3>
+      <p>6 items are currently behind inflation or below market rate. Approving the Q2 review would bring your score to <strong>91</strong>.</p>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Annual Revenue</div>
+      <div class="kpi-value">$1.24M</div>
+      <div class="kpi-sub">Last 12 months · Rosslyn</div>
+      <div class="kpi-delta up">↑ 4.2% vs prior year</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Recovered via Vet INC</div>
+      <div class="kpi-value">$18,400</div>
+      <div class="kpi-sub">Since onboarding · approved changes</div>
+      <div class="kpi-delta up">↑ 3 reviews completed</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Pending Approval</div>
+      <div class="kpi-value">$6,840</div>
+      <div class="kpi-sub">Est. annual uplift if Q2 approved</div>
+      <div class="kpi-delta" style="color:var(--orange)">→ 6 items awaiting your sign-off</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Items Below Inflation</div>
+      <div class="kpi-value">42</div>
+      <div class="kpi-sub">Out of 318 active service codes</div>
+      <div class="kpi-delta down">↓ was 61 last quarter</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">What Happens Next</div>
+    <div style="display:flex;flex-direction:column;gap:0.85rem">
+      <div style="display:flex;align-items:flex-start;gap:0.75rem">
+        <div style="width:28px;height:28px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.8rem;font-weight:800;color:var(--primary)">1</div>
+        <div>
+          <div style="font-size:0.88rem;font-weight:700;color:var(--text)">Review &amp; approve this quarter's price changes</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">6 items waiting · takes about 2 minutes</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:0.75rem">
+        <div style="width:28px;height:28px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.8rem;font-weight:800;color:var(--green)">2</div>
+        <div>
+          <div style="font-size:0.88rem;font-weight:700;color:var(--text)">Prices update in AVImark automatically</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">No manual entry — Vet INC handles the bulk update</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:0.75rem">
+        <div style="width:28px;height:28px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.8rem;font-weight:800;color:var(--muted)">3</div>
+        <div>
+          <div style="font-size:0.88rem;font-weight:700;color:var(--muted)">Next review: September 2026</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">You'll get an email when it's ready</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────── HISTORY TAB ─────────────────────── -->
+<section id="tab-history" class="section">
+  <div class="section-header">
+    <div class="section-title">Price History</div>
+    <div class="section-sub">Every change made through Vet INC — what changed, when, and why</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">2026 Activity</div>
+    <div class="timeline">
+
+      <div class="timeline-item">
+        <div class="timeline-dot orange"></div>
+        <div class="timeline-date">Jun 18, 2026</div>
+        <div class="timeline-content">
+          <div class="timeline-title">Q2 Review Generated — Awaiting Approval</div>
+          <div class="timeline-detail">6 items flagged · Est. $6,840/yr uplift</div>
+          <span class="timeline-tag orange">Pending</span>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot green"></div>
+        <div class="timeline-date">Mar 12, 2026</div>
+        <div class="timeline-content">
+          <div class="timeline-title">Q1 Review Approved — 9 of 11 items accepted</div>
+          <div class="timeline-detail">Comprehensive Exam · Heartworm Test · Bordetella · +6 more · $8,200/yr recovered</div>
+          <span class="timeline-tag green">Applied</span>
+          <span class="timeline-tag blue">AI + Consultant</span>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot green"></div>
+        <div class="timeline-date">Dec 4, 2025</div>
+        <div class="timeline-content">
+          <div class="timeline-title">Q4 2025 Review Approved — 7 of 7 items accepted</div>
+          <div class="timeline-detail">Full acceptance · $5,100/yr recovered · Prices updated in AVImark Dec 5</div>
+          <span class="timeline-tag green">Applied</span>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Sep 8, 2025</div>
+        <div class="timeline-content">
+          <div class="timeline-title">Rosslyn onboarded to Vet INC</div>
+          <div class="timeline-detail">Initial data sync · 318 service codes imported · Baseline established</div>
+          <span class="timeline-tag blue">Onboarding</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────── SUGGEST TAB ─────────────────────── -->
+<section id="tab-suggest" class="section">
+  <div class="section-header">
+    <div class="section-title">Suggest a Price Change</div>
+    <div class="section-sub">Flag an item you think needs attention — your consultant will review it</div>
+  </div>
+
+  <div class="suggest-form">
+    <h3>Submit a suggestion</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Service / Item Name</label>
+        <input type="text" placeholder="e.g. Ultrasound — Abdominal" id="sug-name" />
+      </div>
+      <div class="form-group">
+        <label>Service Code (if known)</label>
+        <input type="text" placeholder="e.g. IM550" id="sug-code" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Current Price</label>
+        <input type="text" placeholder="$0.00" id="sug-current" />
+      </div>
+      <div class="form-group">
+        <label>Your Suggested Price</label>
+        <input type="text" placeholder="$0.00" id="sug-new" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Reason</label>
+        <textarea placeholder="Why do you think this price should change? (competitors, costs, gut feel — all valid)" id="sug-reason"></textarea>
+      </div>
+    </div>
+    <button class="btn-submit" onclick="submitSuggestion()">Submit Suggestion</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Your Previous Suggestions</div>
+    <div id="suggestion-list">
+      <div class="suggestion-card">
+        <div style="flex:1">
+          <div style="font-size:0.88rem;font-weight:700;color:var(--text)">Ultrasound — Abdominal</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Submitted Mar 3, 2026 · "We're $40 cheaper than the clinic two blocks over"</div>
+        </div>
+        <span class="suggestion-status submitted">Reviewed — included in Q2</span>
+      </div>
+      <div class="suggestion-card">
+        <div style="flex:1">
+          <div style="font-size:0.88rem;font-weight:700;color:var(--text)">Boarding — Feline (per night)</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Submitted Feb 18, 2026 · "Haven't changed this in 3 years"</div>
+        </div>
+        <span class="suggestion-status pending">Under Review</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- APPROVAL SUCCESS MODAL -->
+<div class="modal-overlay" id="success-modal">
+  <div class="modal">
+    <div class="modal-icon">✅</div>
+    <h2>Changes Approved!</h2>
+    <p>Your price changes have been submitted. Vet INC will update AVImark within 24 hours.</p>
+    <div class="modal-detail" id="modal-detail">
+      Loading summary...
+    </div>
+    <button class="btn-close-modal" onclick="document.getElementById('success-modal').classList.remove('active')">Done</button>
+  </div>
+</div>
+
+<script>
+const uplifts = { 1: 3200, 2: 1540, 3: 910, 4: 560, 5: 418, 6: 212 };
+const approved = new Set();
+const skipped = new Set();
+
+function updateConfirmBar() {
+  const count = approved.size;
+  const uplift = [...approved].reduce((s, i) => s + uplifts[i], 0);
+  document.getElementById('approved-count').textContent = count;
+  document.getElementById('approved-uplift').textContent = '$' + uplift.toLocaleString();
+  document.getElementById('confirm-btn').disabled = count === 0;
+  const badge = document.getElementById('pending-badge');
+  const remaining = 6 - skipped.size;
+  badge.textContent = remaining;
+  badge.style.display = remaining === 0 ? 'none' : '';
+}
+
+function toggleApprove(id) {
+  const btn = document.getElementById('approve-' + id);
+  const item = document.getElementById('item-' + id);
+  if (approved.has(id)) {
+    approved.delete(id);
+    btn.textContent = '✓ Approve';
+    btn.classList.remove('active');
+    item.classList.remove('approved');
+  } else {
+    approved.add(id);
+    skipped.delete(id);
+    btn.textContent = '✓ Approved';
+    btn.classList.add('active');
+    item.classList.remove('skipped');
+    item.classList.add('approved');
+  }
+  updateConfirmBar();
+}
+
+function skipItem(id) {
+  const item = document.getElementById('item-' + id);
+  const btn = document.getElementById('approve-' + id);
+  approved.delete(id);
+  skipped.add(id);
+  btn.textContent = '✓ Approve';
+  btn.classList.remove('active');
+  item.classList.remove('approved');
+  item.classList.add('skipped');
+  updateConfirmBar();
+}
+
+function approveAll() {
+  for (let i = 1; i <= 6; i++) {
+    if (!skipped.has(i)) {
+      approved.add(i);
+      const btn = document.getElementById('approve-' + i);
+      const item = document.getElementById('item-' + i);
+      btn.textContent = '✓ Approved';
+      btn.classList.add('active');
+      item.classList.remove('skipped');
+      item.classList.add('approved');
+    }
+  }
+  updateConfirmBar();
+}
+
+function confirmApproval() {
+  const count = approved.size;
+  const uplift = [...approved].reduce((s, i) => s + uplifts[i], 0);
+  document.getElementById('modal-detail').innerHTML =
+    `<strong>${count} price changes</strong> approved<br>` +
+    `Estimated annual uplift: <strong style="color:var(--green)">+$${uplift.toLocaleString()}</strong><br>` +
+    `<span style="font-size:0.78rem;color:var(--muted)">AVImark update scheduled for tonight</span>`;
+  document.getElementById('success-modal').classList.add('active');
+  document.getElementById('pending-badge').style.display = 'none';
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function submitSuggestion() {
+  const name = document.getElementById('sug-name').value.trim();
+  if (!name) { alert('Please enter a service name.'); return; }
+  const list = document.getElementById('suggestion-list');
+  const card = document.createElement('div');
+  card.className = 'suggestion-card';
+  const today = new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+  const reason = document.getElementById('sug-reason').value.trim();
+  card.innerHTML = `
+    <div style="flex:1">
+      <div style="font-size:0.88rem;font-weight:700;color:var(--text)">${name}</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Submitted ${today}${reason ? ' · "' + reason + '"' : ''}</div>
+    </div>
+    <span class="suggestion-status pending">Submitted</span>`;
+  list.prepend(card);
+  ['sug-name','sug-code','sug-current','sug-new','sug-reason'].forEach(id => document.getElementById(id).value = '');
+}
+
+// Auto-open approve tab if URL has ?review param
+if (new URLSearchParams(window.location.search).get('review')) {
+  document.querySelector('.tab-btn').click();
+}
+</script>
+</body>
+</html>
