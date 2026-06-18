@@ -229,41 +229,37 @@ async function main() {
   if (flagged.length > 10) console.log(`  … and ${flagged.length - 10} more`);
   console.log(`\n  Combined uplift potential: +$${totalUplift.toLocaleString()}/yr`);
 
-  // 5. Write to Supabase — clear old pending rows, insert all flagged + summary meta row
-  console.log(`\nWriting to price_recommendations…`);
+  // 5. Write to Supabase
+  console.log(`\nWriting to Supabase…`);
 
-  // Delete existing pending + meta rows for this clinic/review
-  for (const status of ['pending', 'meta']) {
-    const delRes = await fetch(
-      `${SB_URL}/rest/v1/price_recommendations?clinic_id=eq.${CLINIC_ID}&review_id=eq.${REVIEW_ID}&status=eq.${status}`,
-      { method: 'DELETE', headers: HEADERS }
-    );
-    if (!delRes.ok) console.warn(`  Warning: could not clear ${status} rows:`, await delRes.text());
-  }
-  console.log(`  Cleared existing rows for ${REVIEW_ID}`);
-
-  // Write summary meta row — dashboard reads this for real health score
-  const metaRow = {
-    clinic_id:    CLINIC_ID,
-    review_id:    REVIEW_ID,
-    service_code: '_summary',
-    service_name: 'Analysis Summary',
-    price_old:    0,
-    price_new:    0,
-    source:       'ai-analysis',
-    annual_volume: totalAnalyzed,   // total services scanned
-    est_uplift:    flagged.length,  // number flagged
-    status:       'meta'
+  // 5a. Upsert the report record into clinic_reports
+  const reportRow = {
+    id:                REVIEW_ID,
+    clinic_id:         CLINIC_ID,
+    type:              process.argv[4] || 'quarterly',
+    report_date:       isoDate(latestDate),
+    health_score:      healthScore,
+    total_services:    totalAnalyzed,
+    flagged_services:  flagged.length,
+    total_opportunity: totalUplift,
+    cpi_rate:          cpiRate,
+    status:            'active'
   };
-  const metaRes = await fetch(`${SB_URL}/rest/v1/price_recommendations`, {
+  const reportRes = await fetch(`${SB_URL}/rest/v1/clinic_reports`, {
     method: 'POST',
-    headers: { ...HEADERS, 'Prefer': 'return=minimal' },
-    body: JSON.stringify(metaRow)
+    headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(reportRow)
   });
-  if (!metaRes.ok) console.warn('  Warning: could not write summary row:', await metaRes.text());
-  else console.log(`  Summary: ${flagged.length} flagged / ${totalAnalyzed} analyzed → score ${healthScore}`);
+  if (!reportRes.ok) console.warn('  Warning: could not write report record:', await reportRes.text());
+  else console.log(`  Report saved: ${REVIEW_ID} | score ${healthScore}/100 | $${totalUplift.toLocaleString()} opportunity`);
 
-  // Insert all flagged rows in batches of 50
+  // 5b. Clear old pending rows for this review and insert fresh suggestions
+  const delRes = await fetch(
+    `${SB_URL}/rest/v1/price_recommendations?clinic_id=eq.${CLINIC_ID}&review_id=eq.${REVIEW_ID}&status=eq.pending`,
+    { method: 'DELETE', headers: HEADERS }
+  );
+  if (!delRes.ok) console.warn(`  Warning: could not clear old suggestions:`, await delRes.text());
+
   const rows = flagged.map(({ stale_pct, ...rest }) => rest);
   const BATCH = 50;
   let inserted = 0;
@@ -278,12 +274,13 @@ async function main() {
       console.error(`  Insert error (batch ${i}):`, await insRes.text());
     } else {
       inserted += batch.length;
-      process.stdout.write(`\r  Inserted ${inserted}/${rows.length} rows…`);
+      process.stdout.write(`\r  Inserted ${inserted}/${rows.length} suggestions…`);
     }
   }
-  console.log(`\n\n✅ Done. ${inserted} price recommendations written.`);
-  console.log(`   Review ID: ${REVIEW_ID} | Clinic: ${CLINIC_ID} | Score: ${healthScore}/100`);
-  console.log(`   View in portal: https://jack108510.github.io/vet-inc-clinic/owner.html?review=${REVIEW_ID}&clinic=${CLINIC_ID}\n`);
+  console.log(`\n\n✅ Done.`);
+  console.log(`   Report: ${REVIEW_ID} | Clinic: ${CLINIC_ID} | Score: ${healthScore}/100`);
+  console.log(`   ${inserted} suggestions written | $${totalUplift.toLocaleString()}/yr opportunity`);
+  console.log(`   Portal: https://jack108510.github.io/vet-inc-clinic/owner.html?clinic=${CLINIC_ID}\n`);
 }
 
 main().catch(err => { console.error('Fatal:', err); process.exit(1); });

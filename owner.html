@@ -432,9 +432,13 @@ body {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
     My Dashboard
   </button>
+  <button class="tab-btn" onclick="showTab('reports', this)" id="tab-btn-reports">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Reports
+  </button>
   <button class="tab-btn" onclick="showTab('approve', this)" id="tab-btn-approve">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-    Approve Prices
+    Suggestions
     <span class="tab-badge" id="pending-badge">6</span>
   </button>
   <button class="tab-btn" onclick="showTab('history', this)">
@@ -447,13 +451,24 @@ body {
   </button>
 </nav>
 
+<!-- ─────────────────────── REPORTS TAB ─────────────────────── -->
+<section id="tab-reports" class="section">
+  <div class="section-header">
+    <div class="section-title">Pricing Reports</div>
+    <div class="section-sub">Every analysis run stored here — your full pricing history</div>
+  </div>
+  <div id="reports-list">
+    <p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.9rem;">Loading reports…</p>
+  </div>
+</section>
+
 <!-- ─────────────────────── APPROVE TAB ─────────────────────── -->
 <section id="tab-approve" class="section">
 
   <div class="review-hero">
     <div class="review-hero-text">
-      <h2>Q2 Pricing Review Ready</h2>
-      <p>Generated June 18, 2026 · Based on 365 days of transaction data and current CPI</p>
+      <h2 id="suggestions-title">Pricing Suggestions</h2>
+      <p id="suggestions-sub">Based on your latest report · You have the final say on every item</p>
     </div>
     <div class="review-stats">
       <div class="review-stat">
@@ -472,7 +487,7 @@ body {
   </div>
 
   <div class="approve-all-bar">
-    <p>Reviewed by Vet INC AI and your consultant. <strong>You have the final say.</strong> Accept all, or review each item below.</p>
+    <p>These are suggestions from your latest pricing report. <strong>Accept what makes sense for your practice</strong> — ignore the rest, or use <em>Make a Change</em> to set any price yourself.</p>
     <button class="btn-approve-all" onclick="approveAll()">✓ Accept All <span id="btn-approve-all-count">…</span> Changes</button>
   </div>
 
@@ -818,14 +833,87 @@ function renderHistory(approvals) {
   }).join('');
 }
 
+function formatReportDate(d) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatReportTitle(r) {
+  if (r.type === 'onboarding') return 'Onboarding Report';
+  if (r.type === 'quarterly') {
+    const m = new Date(r.report_date + 'T00:00:00').getMonth();
+    const y = new Date(r.report_date + 'T00:00:00').getFullYear();
+    const q = Math.ceil((m + 1) / 3);
+    return 'Q' + q + ' ' + y + ' Report';
+  }
+  return r.id;
+}
+
+function renderReports(reports) {
+  if (!reports.length) return '<p style="color:var(--muted);text-align:center;padding:3rem;font-size:0.9rem;">No reports yet. Run the pricing analysis to generate your first report.</p>';
+
+  return reports.map((r, i) => {
+    const isLatest = i === 0;
+    const scoreColor = r.health_score >= 80 ? 'var(--success)' : r.health_score >= 60 ? 'var(--primary)' : '#b45309';
+    const typeLabel = r.type === 'onboarding' ? 'Onboarding' : r.type === 'quarterly' ? 'Quarterly' : 'Ad Hoc';
+    const typeBg    = r.type === 'onboarding' ? '#dbeafe' : r.type === 'quarterly' ? '#dcfce7' : '#f3f4f6';
+    const typeColor = r.type === 'onboarding' ? 'var(--primary)' : r.type === 'quarterly' ? 'var(--success)' : 'var(--muted)';
+    const oppStr    = r.total_opportunity ? '+$' + Number(r.total_opportunity).toLocaleString() + '/yr' : '—';
+    const approvedStr = r.approved_count ? r.approved_count + ' approved' : 'None approved yet';
+    return `
+    <div class="card" style="margin-bottom:1rem;border-left:3px solid ${isLatest ? 'var(--primary)' : 'var(--border)'}">
+      <div style="display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.35rem">
+            <span style="font-weight:700;font-size:0.95rem;color:var(--text)">${formatReportTitle(r)}</span>
+            ${isLatest ? '<span style="background:var(--primary);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px">CURRENT</span>' : ''}
+            <span style="background:${typeBg};color:${typeColor};font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px">${typeLabel.toUpperCase()}</span>
+          </div>
+          <div style="font-size:0.8rem;color:var(--muted)">${formatReportDate(r.report_date)} · ${Number(r.total_services || 0).toLocaleString()} services analyzed · CPI ${r.cpi_rate ? (r.cpi_rate * 100).toFixed(1) + '%' : '—'}</div>
+        </div>
+        <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+          <div style="text-align:center">
+            <div style="font-size:1.3rem;font-weight:900;color:${scoreColor}">${r.health_score ?? '—'}</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase">Score</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${r.flagged_services ?? '—'}</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase">Flagged</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:1rem;font-weight:700;color:var(--success)">${oppStr}</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase">Opportunity</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--muted)">${approvedStr}</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase">Actions Taken</div>
+          </div>
+          ${isLatest ? `<button onclick="document.getElementById('tab-btn-approve').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap">View Suggestions →</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 async function init() {
   const el = (id) => document.getElementById(id);
 
-  // ─── Recommendations (Approve tab) + summary meta row ───
-  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + REVIEW_ID + '&select=*');
+  // ─── Reports tab — load all reports for this clinic ───
+  const rptRes = await sbFetch('/rest/v1/clinic_reports?clinic_id=eq.' + CLINIC_ID + '&order=created_at.desc&select=*');
+  const allReports = rptRes.ok ? await rptRes.json() : [];
+  el('reports-list').innerHTML = renderReports(allReports);
+
+  // ─── Suggestions (Approve tab) — use most recent active report's review_id ───
+  const activeReport = allReports.find(r => r.status === 'active') || allReports[0];
+  const activeReviewId = activeReport ? activeReport.id : REVIEW_ID;
+  if (activeReport) {
+    el('suggestions-title').textContent = formatReportTitle(activeReport) + ' — Suggestions';
+    el('suggestions-sub').textContent = 'Based on your ' + formatReportDate(activeReport.report_date) + ' report · You have the final say on every item';
+  }
+
+  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + activeReviewId + '&status=eq.pending&select=*');
   const allRecs = recRes.ok ? await recRes.json() : [];
-  const summaryRow = allRecs.find(r => r.service_code === '_summary' && r.status === 'meta');
-  ITEMS = allRecs.filter(r => r.status === 'pending');
+  const summaryRow = null; // now stored in clinic_reports
+  ITEMS = allRecs;
 
   const list = el('approval-list');
   list.innerHTML = ITEMS.length ? ITEMS.map(renderItem).join('') : '<p style="color:var(--muted);text-align:center;padding:2rem;">No pending items for this review.</p>';
@@ -883,14 +971,13 @@ async function init() {
     // Section subtitle
     if (el('dash-sub')) el('dash-sub').textContent = 'Rosslyn Veterinary Clinic · Updated ' + new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
 
-    // Health score — real calculation from analysis engine summary row
+    // Health score — read directly from clinic_reports
     let score, totalAnalyzed, flaggedCount;
-    if (summaryRow) {
-      totalAnalyzed = Number(summaryRow.annual_volume) || 0; // total services scanned
-      flaggedCount  = Number(summaryRow.est_uplift)    || 0; // number flagged
-      score = totalAnalyzed > 0 ? Math.round((1 - flaggedCount / totalAnalyzed) * 100) : 97;
+    if (activeReport) {
+      score         = Number(activeReport.health_score)    || 0;
+      totalAnalyzed = Number(activeReport.total_services)  || 0;
+      flaggedCount  = Number(activeReport.flagged_services) || 0;
     } else {
-      // Fallback if analysis hasn't been run yet
       totalAnalyzed = 0;
       flaggedCount  = ITEMS.length;
       score = ITEMS.length === 0 ? 97 : Math.max(60, 97 - ITEMS.length);
