@@ -649,7 +649,7 @@ body {
       <div style="font-size:0.88rem;font-weight:700;color:var(--text)" id="callout-title">You have pricing items to review</div>
       <div style="font-size:0.78rem;color:var(--muted);margin-top:2px" id="callout-sub">Takes about 2 minutes</div>
     </div>
-    <button onclick="document.getElementById('tab-btn-approve').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap">Review Now →</button>
+    <button onclick="document.getElementById('tab-btn-reports').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap">Review Now →</button>
   </div>
 
 </section>
@@ -778,13 +778,15 @@ function realUplift(item) {
 function updateConfirmBar() {
   const count = approved.size;
   const uplift = ITEMS.filter(i => approved.has(i.service_code)).reduce((s, i) => s + realUplift(i), 0);
-  document.getElementById('approved-count').textContent = count;
-  document.getElementById('approved-uplift').textContent = '$' + uplift.toLocaleString();
-  document.getElementById('confirm-btn').disabled = count === 0;
+  const setEl = (id, fn) => { const e = document.getElementById(id); if (e) fn(e); };
+  setEl('approved-count', e => e.textContent = count);
+  setEl('approved-uplift', e => e.textContent = '$' + uplift.toLocaleString());
+  setEl('confirm-btn', e => e.disabled = count === 0);
   const remaining = ITEMS.length - skipped.size;
-  const badge = document.getElementById('pending-badge');
-  badge.textContent = remaining;
-  badge.style.display = remaining === 0 ? 'none' : '';
+  setEl('pending-badge', e => { e.textContent = remaining; e.style.display = remaining === 0 ? 'none' : ''; });
+  // Show/hide the inline confirm bar in report detail
+  const bar = document.getElementById('rpt-confirm-bar');
+  if (bar) bar.style.display = ITEMS.length > 0 ? 'flex' : 'none';
 }
 
 function toggleApprove(code) {
@@ -865,7 +867,6 @@ async function confirmApproval() {
     'Estimated annual uplift: <strong style="color:var(--green)">+$' + uplift.toLocaleString() + '</strong><br>' +
     '<span style="font-size:0.78rem;color:var(--muted)">AVImark update scheduled for tonight</span>';
   document.getElementById('success-modal').classList.add('active');
-  document.getElementById('pending-badge').style.display = 'none';
   btn.textContent = 'Confirmed ✓';
 }
 
@@ -1450,14 +1451,8 @@ async function submitPriceChange() {
 // Helper
 function el(id) { return document.getElementById(id); }
 
-// Tab routing
-if (new URLSearchParams(window.location.search).get('review')) {
-  document.getElementById('tab-btn-approve').classList.add('active');
-  document.getElementById('tab-dashboard').classList.remove('active');
-  document.getElementById('tab-approve').classList.add('active');
-} else {
-  document.getElementById('tab-btn-dashboard').classList.add('active');
-}
+// Tab routing — default to dashboard on load
+document.getElementById('tab-btn-dashboard').classList.add('active');
 
 init();
 </script>
