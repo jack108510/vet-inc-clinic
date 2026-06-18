@@ -938,6 +938,7 @@ function showTab(name, btn) {
 // ─── MAKE A CHANGE ───────────────────────────────────────────────
 let selectedService = null;
 let searchTimer = null;
+const svcCache = {};
 
 function searchServices(query) {
   clearTimeout(searchTimer);
@@ -967,8 +968,10 @@ function searchServices(query) {
       return;
     }
 
+    services.forEach(s => { svcCache[s.code] = s; });
+
     results.innerHTML = services.map(s =>
-      '<div class="svc-result-card" onclick="selectService(\'' + s.code + '\', ' + JSON.stringify(s.desc) + ', ' + s.avgPrice.toFixed(4) + ')">' +
+      '<div class="svc-result-card" data-code="' + s.code + '">' +
         '<div style="flex:1">' +
           '<div style="font-size:0.88rem;font-weight:700;color:var(--text)">' + s.desc + '</div>' +
           '<div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Code: ' + s.code + '</div>' +
@@ -979,11 +982,18 @@ function searchServices(query) {
         '</div>' +
       '</div>'
     ).join('');
+
+    results.querySelectorAll('.svc-result-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const s = svcCache[card.dataset.code];
+        if (s) selectService(s.code, s.desc, s.avgPrice);
+      });
+    });
   }, 380);
 }
 
 async function selectService(code, desc, avgPrice) {
-  selectedService = { code, desc, avgPrice, annualVolume: 0 };
+  selectedService = { code, desc: desc || code, avgPrice: avgPrice || 0, annualVolume: 0 };
 
   el('service-detail').style.display = 'block';
   el('search-results').innerHTML =
