@@ -599,7 +599,7 @@ body {
       <div class="kpi-card">
         <div class="kpi-label">Current Price</div>
         <div class="kpi-value" id="svc-price">…</div>
-        <div class="kpi-sub">avg last 100 transactions</div>
+        <div class="kpi-sub">from most recent transactions</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Annual Visits</div>
@@ -971,11 +971,11 @@ function searchServices(query) {
       '<div class="svc-result-card" onclick="selectService(\'' + s.code + '\', ' + JSON.stringify(s.desc) + ', ' + s.avgPrice.toFixed(4) + ')">' +
         '<div style="flex:1">' +
           '<div style="font-size:0.88rem;font-weight:700;color:var(--text)">' + s.desc + '</div>' +
-          '<div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Code: ' + s.code + ' · ' + s.sampleCount + ' sample transactions</div>' +
+          '<div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Code: ' + s.code + '</div>' +
         '</div>' +
         '<div style="text-align:right;flex-shrink:0">' +
           '<div style="font-size:1rem;font-weight:800;color:var(--primary)">' + fmt$(s.avgPrice) + '</div>' +
-          '<div style="font-size:0.7rem;color:var(--muted)">avg price</div>' +
+          '<div style="font-size:0.7rem;color:var(--muted)">current price</div>' +
         '</div>' +
       '</div>'
     ).join('');
