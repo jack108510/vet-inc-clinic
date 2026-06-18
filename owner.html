@@ -18,11 +18,13 @@
   --text: #1e3a5f;
   --muted: #64748b;
   --green: #16a34a;
-  --red: #2563eb;
+  --success: #16a34a;
+  --warning: #d97706;
+  --red: #dc2626;
   --purple: #7c3aed;
   --emerald: #059669;
-  --orange: #2563eb;
-  --yellow: #0ea5e9;
+  --orange: #ea580c;
+  --yellow: #ca8a04;
 }
 
 body {
@@ -221,6 +223,21 @@ body {
   cursor: pointer; transition: all 0.15s;
 }
 .btn-skip:hover { background: var(--surface2); }
+
+.filter-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+.filter-btn {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 20px;
+  color: var(--muted); font-size: 0.78rem; font-weight: 600; padding: 5px 14px;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+.filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.filter-btn.shoppable.active { background: #d97706; border-color: #d97706; color: #fff; }
+.shoppable-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+  background: #fef3c7; color: #92400e; flex-shrink: 0;
+}
 
 .approve-all-bar {
   background: var(--surface2);
@@ -535,56 +552,19 @@ body {
         <button class="btn-confirm" id="confirm-btn" onclick="confirmApproval()" disabled>Apply Accepted Changes</button>
       </div>
 
+      <!-- Filter bar -->
+      <div class="filter-bar" id="suggestion-filter-bar" style="display:none">
+        <span style="font-size:0.75rem;color:var(--muted);font-weight:600">Show:</span>
+        <button class="filter-btn active" onclick="setFilter('all')" id="filter-all">All <span id="filter-count-all"></span></button>
+        <button class="filter-btn" onclick="setFilter('safe')" id="filter-safe">✓ Safe to raise <span id="filter-count-safe"></span></button>
+        <button class="filter-btn shoppable" onclick="setFilter('shoppable')" id="filter-shoppable">⚠ Price-sensitive <span id="filter-count-shoppable"></span></button>
+      </div>
+
       <div id="approval-list">
         <p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.9rem;">Loading suggestions…</p>
       </div>
     </div>
   </div>
-</section>
-
-<!-- Approve section hidden — approval now happens inside report detail view -->
-<section id="tab-approve" class="section" style="display:none!important">
-
-  <div class="review-hero">
-    <div class="review-hero-text">
-      <h2 id="suggestions-title">Pricing Suggestions</h2>
-      <p id="suggestions-sub">Based on your latest report · You have the final say on every item</p>
-    </div>
-    <div class="review-stats">
-      <div class="review-stat">
-        <div class="review-stat-val" id="hero-count">…</div>
-        <div class="review-stat-label">Items Flagged</div>
-      </div>
-      <div class="review-stat">
-        <div class="review-stat-val" id="hero-uplift">…</div>
-        <div class="review-stat-label">Est. Annual Uplift</div>
-      </div>
-      <div class="review-stat">
-        <div class="review-stat-val">~2 min</div>
-        <div class="review-stat-label">To Review</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="approve-all-bar">
-    <p>These are suggestions from your latest pricing report. <strong>Accept what makes sense for your practice</strong> — ignore the rest, or use <em>Make a Change</em> to set any price yourself.</p>
-    <button class="btn-approve-all" onclick="approveAll()">✓ Accept All <span id="btn-approve-all-count">…</span> Changes</button>
-  </div>
-
-  <div id="approval-list">
-    <p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.9rem;">Loading items…</p>
-  </div>
-
-  <!-- STICKY CONFIRM BAR -->
-  <div class="confirm-bar">
-    <div class="confirm-summary">
-      <span id="approved-count">0</span> of <span id="total-items">…</span> approved · Est. uplift: <span id="approved-uplift">$0</span> / yr
-    </div>
-    <button class="btn-confirm" id="confirm-btn" onclick="confirmApproval()" disabled>
-      Confirm &amp; Apply Changes
-    </button>
-  </div>
-
 </section>
 
 <!-- ─────────────────────── DASHBOARD TAB ─────────────────────── -->
@@ -762,6 +742,33 @@ const REVIEW_ID = new URLSearchParams(window.location.search).get('review') || '
 let ITEMS = [];
 const approved = new Set();
 const skipped = new Set();
+let currentFilter = 'all';
+
+const SHOPPABLE_KEYWORDS = [
+  'vaccine','vaccin','vacc','neuter','spay','dental','rabies','heartworm',
+  'dewormer','flea','tick','wellness','exam','nail trim','groom','boarding','bath','microchip'
+];
+
+function isShoppable(item) {
+  const name = (item.service_name || '').toLowerCase();
+  return SHOPPABLE_KEYWORDS.some(k => name.includes(k));
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter-' + filter).classList.add('active');
+  renderFilteredList();
+}
+
+function renderFilteredList() {
+  const filtered = currentFilter === 'all' ? ITEMS
+    : currentFilter === 'safe' ? ITEMS.filter(i => !isShoppable(i))
+    : ITEMS.filter(i => isShoppable(i));
+  document.getElementById('approval-list').innerHTML = filtered.length
+    ? filtered.map(renderItem).join('')
+    : '<p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.85rem">No items in this category.</p>';
+}
 
 const sbFetch = (path) => fetch(SB_URL + path, {
   headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
@@ -876,10 +883,12 @@ function renderItem(item) {
   const chipLabel = item.source === 'consultant' ? 'Consultant' : 'AI';
   const delta = (Number(item.price_new) - Number(item.price_old)).toFixed(2);
   const deltaStr = (delta > 0 ? '+' : '') + '$' + Math.abs(delta).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const shoppable = isShoppable(item);
+  const shoppableBadge = shoppable ? '<span class="shoppable-badge">⚠ Price-Sensitive</span>' : '';
   return '<div class="approval-item" id="item-' + code + '">' +
     '<span class="ai-chip ' + chipClass + '">' + chipLabel + '</span>' +
     '<div class="item-info">' +
-      '<div class="item-name">' + item.service_name + '</div>' +
+      '<div class="item-name" style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap">' + item.service_name + shoppableBadge + '</div>' +
       '<div class="item-code">Code: ' + code + '</div>' +
     '</div>' +
     '<div class="price-change">' +
@@ -1028,7 +1037,9 @@ async function openReport(reportId) {
   // Load suggestions for this report
   document.getElementById('approval-list').innerHTML = '<p style="color:var(--muted);text-align:center;padding:1.5rem;font-size:0.85rem">Loading…</p>';
   document.getElementById('rpt-confirm-bar').style.display = 'none';
+  document.getElementById('suggestion-filter-bar').style.display = 'none';
   ITEMS = [];
+  currentFilter = 'all';
   approved.clear(); skipped.clear();
   updateConfirmBar();
 
@@ -1039,19 +1050,21 @@ async function openReport(reportId) {
   document.getElementById('total-items').textContent = ITEMS.length;
 
   if (ITEMS.length) {
-    document.getElementById('approval-list').innerHTML = ITEMS.map(renderItem).join('');
-    // re-attach event listeners
-    document.querySelectorAll('[data-code]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const code = btn.dataset.code;
-        const item = ITEMS.find(i => i.service_code === code);
-        if (item) { approved.has(code) ? unapprove(code) : approve(code); }
-      });
-    });
+    // Filter counts
+    const shoppableCount = ITEMS.filter(isShoppable).length;
+    const safeCount = ITEMS.length - shoppableCount;
+    document.getElementById('filter-count-all').textContent = ITEMS.length;
+    document.getElementById('filter-count-safe').textContent = safeCount;
+    document.getElementById('filter-count-shoppable').textContent = shoppableCount;
+    document.getElementById('suggestion-filter-bar').style.display = 'flex';
+    // Reset filter buttons
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('filter-all').classList.add('active');
+
+    renderFilteredList();
     document.getElementById('rpt-confirm-bar').style.display = 'flex';
     updateConfirmBar();
 
-    // Top opportunities chart
     renderTopItems(ITEMS.slice(0, 8));
   } else {
     document.getElementById('approval-list').innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.85rem">No suggestions for this report — all prices were current at the time of analysis.</p>';
@@ -1211,7 +1224,7 @@ async function init() {
       el('health-desc').textContent = 'Your pricing is up to date.' + analysisSub;
     }
     if (pendingCount > 0 && el('health-action')) {
-      el('health-action').innerHTML = '<button onclick="document.getElementById(\'tab-btn-approve\').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.82rem;font-weight:700;cursor:pointer">Review Now →</button>';
+      el('health-action').innerHTML = '<button onclick="document.getElementById(\'tab-btn-reports\').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.82rem;font-weight:700;cursor:pointer">Review Now →</button>';
     }
 
     // Revenue bar chart
