@@ -436,11 +436,7 @@ body {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
     Reports
   </button>
-  <button class="tab-btn" onclick="showTab('approve', this)" id="tab-btn-approve">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-    Suggestions
-    <span class="tab-badge" id="pending-badge">6</span>
-  </button>
+  <!-- Suggestions tab removed — suggestions now live inside each report -->
   <button class="tab-btn" onclick="showTab('history', this)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     Price History
@@ -453,17 +449,101 @@ body {
 
 <!-- ─────────────────────── REPORTS TAB ─────────────────────── -->
 <section id="tab-reports" class="section">
-  <div class="section-header">
-    <div class="section-title">Pricing Reports</div>
-    <div class="section-sub">Every analysis run stored here — your full pricing history</div>
+  <!-- List view -->
+  <div id="reports-list-view">
+    <div class="section-header">
+      <div class="section-title">Pricing Reports</div>
+      <div class="section-sub">Every analysis stored here — click any report to view the full breakdown</div>
+    </div>
+    <div id="reports-list">
+      <p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.9rem;">Loading reports…</p>
+    </div>
   </div>
-  <div id="reports-list">
-    <p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.9rem;">Loading reports…</p>
+
+  <!-- Detail view (hidden until a report is clicked) -->
+  <div id="reports-detail-view" style="display:none">
+    <div style="margin-bottom:1.5rem">
+      <button onclick="showReportList()" style="background:none;border:none;color:var(--primary);font-size:0.85rem;font-weight:600;cursor:pointer;padding:0;display:flex;align-items:center;gap:0.4rem">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        All Reports
+      </button>
+    </div>
+
+    <!-- Report header -->
+    <div class="card" style="margin-bottom:1.25rem;background:linear-gradient(135deg,#1e40af 0%,#1d4ed8 100%);color:#fff;border:none">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+        <div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:0.35rem" id="rpt-type-label">Quarterly Report</div>
+          <div style="font-size:1.4rem;font-weight:900;margin-bottom:0.25rem" id="rpt-title">Q2 2026 Report</div>
+          <div style="font-size:0.82rem;opacity:0.8" id="rpt-meta">Rosslyn Veterinary Clinic · June 18, 2026</div>
+        </div>
+        <div style="display:flex;gap:2rem;align-items:center;flex-wrap:wrap">
+          <div style="text-align:center">
+            <div style="font-size:2.5rem;font-weight:900;line-height:1" id="rpt-score">—</div>
+            <div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase;letter-spacing:0.05em">Health Score</div>
+            <div style="font-size:0.75rem;margin-top:2px" id="rpt-score-delta"></div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:1.4rem;font-weight:800" id="rpt-opportunity">—</div>
+            <div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase;letter-spacing:0.05em">Annual Opportunity</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:1.4rem;font-weight:800" id="rpt-flagged">—</div>
+            <div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase;letter-spacing:0.05em">Services Flagged</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:1.4rem;font-weight:800" id="rpt-analyzed">—</div>
+            <div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase;letter-spacing:0.05em">Analyzed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Score context -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-title">What This Score Means</div>
+      <p id="rpt-score-context" style="font-size:0.875rem;color:var(--text);line-height:1.6;margin:0"></p>
+    </div>
+
+    <!-- Price change distribution -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-title">Price Change Distribution</div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem">How your active services moved year-over-year, compared to CPI</p>
+      <div id="rpt-distribution" style="display:flex;flex-direction:column;gap:0.6rem"></div>
+    </div>
+
+    <!-- Top opportunities -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-title">Top Revenue Opportunities</div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem">Services with the highest annual impact if prices are updated</p>
+      <div id="rpt-top-items"></div>
+    </div>
+
+    <!-- Suggested changes (from AI analysis) -->
+    <div class="card" id="rpt-suggestions-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">
+        <div>
+          <div class="card-title" style="margin-bottom:0.2rem">Suggested Price Changes</div>
+          <p style="font-size:0.78rem;color:var(--muted);margin:0">Based on CPI analysis of your transaction data. Accept what makes sense — skip the rest.</p>
+        </div>
+        <button class="btn-approve-all" onclick="approveAll()" style="font-size:0.8rem;padding:8px 16px">✓ Accept All <span id="btn-approve-all-count">…</span></button>
+      </div>
+
+      <!-- Confirm bar inline -->
+      <div id="rpt-confirm-bar" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <span style="font-size:0.85rem;color:var(--text)"><strong id="approved-count">0</strong> of <strong id="total-items">…</strong> accepted · Est. uplift: <strong id="approved-uplift" style="color:var(--success)">$0</strong>/yr</span>
+        <button class="btn-confirm" id="confirm-btn" onclick="confirmApproval()" disabled>Apply Accepted Changes</button>
+      </div>
+
+      <div id="approval-list">
+        <p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.9rem;">Loading suggestions…</p>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- ─────────────────────── APPROVE TAB ─────────────────────── -->
-<section id="tab-approve" class="section">
+<!-- Approve section hidden — approval now happens inside report detail view -->
+<section id="tab-approve" class="section" style="display:none!important">
 
   <div class="review-hero">
     <div class="review-hero-text">
@@ -848,47 +928,191 @@ function formatReportTitle(r) {
   return r.id;
 }
 
+let ALL_REPORTS = [];
+
 function renderReports(reports) {
   if (!reports.length) return '<p style="color:var(--muted);text-align:center;padding:3rem;font-size:0.9rem;">No reports yet. Run the pricing analysis to generate your first report.</p>';
-
   return reports.map((r, i) => {
-    const isLatest = i === 0;
-    const scoreColor = r.health_score >= 80 ? 'var(--success)' : r.health_score >= 60 ? 'var(--primary)' : '#b45309';
-    const typeLabel = r.type === 'onboarding' ? 'Onboarding' : r.type === 'quarterly' ? 'Quarterly' : 'Ad Hoc';
-    const typeBg    = r.type === 'onboarding' ? '#dbeafe' : r.type === 'quarterly' ? '#dcfce7' : '#f3f4f6';
-    const typeColor = r.type === 'onboarding' ? 'var(--primary)' : r.type === 'quarterly' ? 'var(--success)' : 'var(--muted)';
-    const oppStr    = r.total_opportunity ? '+$' + Number(r.total_opportunity).toLocaleString() + '/yr' : '—';
-    const approvedStr = r.approved_count ? r.approved_count + ' approved' : 'None approved yet';
+    const isLatest   = i === 0;
+    const scoreColor = r.health_score >= 80 ? 'var(--success)' : r.health_score >= 60 ? 'var(--primary)' : 'var(--warning,#d97706)';
+    const typeLabel  = r.type === 'onboarding' ? 'Onboarding' : r.type === 'quarterly' ? 'Quarterly' : 'Ad Hoc';
+    const prevReport = reports[i + 1];
+    const delta      = prevReport && prevReport.health_score != null && r.health_score != null
+      ? r.health_score - prevReport.health_score : null;
+    const deltaStr   = delta === null ? '' : delta >= 0
+      ? `<span style="color:var(--success);font-size:0.75rem;font-weight:700">▲ ${delta} from last</span>`
+      : `<span style="color:#d97706;font-size:0.75rem;font-weight:700">▼ ${Math.abs(delta)} from last</span>`;
     return `
-    <div class="card" style="margin-bottom:1rem;border-left:3px solid ${isLatest ? 'var(--primary)' : 'var(--border)'}">
-      <div style="display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
-        <div style="flex:1;min-width:200px">
-          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.35rem">
+    <div class="card" style="margin-bottom:0.85rem;cursor:pointer;border-left:3px solid ${isLatest ? 'var(--primary)' : 'var(--border)'};transition:box-shadow 0.15s" onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)'" onmouseleave="this.style.boxShadow=''" onclick="openReport('${r.id}')">
+      <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;flex-wrap:wrap">
             <span style="font-weight:700;font-size:0.95rem;color:var(--text)">${formatReportTitle(r)}</span>
-            ${isLatest ? '<span style="background:var(--primary);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px">CURRENT</span>' : ''}
-            <span style="background:${typeBg};color:${typeColor};font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px">${typeLabel.toUpperCase()}</span>
+            ${isLatest ? '<span style="background:var(--primary);color:#fff;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:20px">CURRENT</span>' : ''}
+            <span style="background:var(--surface2);color:var(--muted);font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:20px">${typeLabel.toUpperCase()}</span>
           </div>
-          <div style="font-size:0.8rem;color:var(--muted)">${formatReportDate(r.report_date)} · ${Number(r.total_services || 0).toLocaleString()} services analyzed · CPI ${r.cpi_rate ? (r.cpi_rate * 100).toFixed(1) + '%' : '—'}</div>
+          <div style="font-size:0.78rem;color:var(--muted)">${formatReportDate(r.report_date)} · ${Number(r.total_services || 0).toLocaleString()} services · CPI ${r.cpi_rate ? (r.cpi_rate * 100).toFixed(1) + '%' : '—'}</div>
         </div>
-        <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;gap:1.75rem;align-items:center;flex-wrap:wrap">
           <div style="text-align:center">
-            <div style="font-size:1.3rem;font-weight:900;color:${scoreColor}">${r.health_score ?? '—'}</div>
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase">Score</div>
+            <div style="font-size:1.5rem;font-weight:900;color:${scoreColor};line-height:1">${r.health_score ?? '—'}</div>
+            <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;margin-top:2px">Score</div>
+            ${deltaStr}
           </div>
           <div style="text-align:center">
             <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${r.flagged_services ?? '—'}</div>
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase">Flagged</div>
+            <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase">Flagged</div>
           </div>
           <div style="text-align:center">
-            <div style="font-size:1rem;font-weight:700;color:var(--success)">${oppStr}</div>
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase">Opportunity</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--success)">${r.total_opportunity ? '+$' + Number(r.total_opportunity).toLocaleString() : '—'}</div>
+            <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase">Opportunity</div>
           </div>
           <div style="text-align:center">
-            <div style="font-size:0.85rem;font-weight:600;color:var(--muted)">${approvedStr}</div>
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase">Actions Taken</div>
+            <div style="font-size:0.9rem;font-weight:600;color:${r.approved_count ? 'var(--success)' : 'var(--muted)'}">${r.approved_count || 0}</div>
+            <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase">Accepted</div>
           </div>
-          ${isLatest ? `<button onclick="document.getElementById('tab-btn-approve').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap">View Suggestions →</button>` : ''}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showReportList() {
+  document.getElementById('reports-list-view').style.display = '';
+  document.getElementById('reports-detail-view').style.display = 'none';
+}
+
+async function openReport(reportId) {
+  const report = ALL_REPORTS.find(r => r.id === reportId);
+  if (!report) return;
+
+  document.getElementById('reports-list-view').style.display = 'none';
+  const detail = document.getElementById('reports-detail-view');
+  detail.style.display = '';
+
+  // Header
+  const typeLabel = report.type === 'onboarding' ? 'Initial Pricing Report' : report.type === 'quarterly' ? 'Quarterly Pricing Report' : 'Ad Hoc Report';
+  document.getElementById('rpt-type-label').textContent = typeLabel;
+  document.getElementById('rpt-title').textContent = formatReportTitle(report);
+  document.getElementById('rpt-meta').textContent = 'Rosslyn Veterinary Clinic · ' + formatReportDate(report.report_date) + ' · CPI ' + (report.cpi_rate ? (report.cpi_rate * 100).toFixed(2) + '%' : '—');
+  document.getElementById('rpt-score').textContent = report.health_score ?? '—';
+  document.getElementById('rpt-opportunity').textContent = report.total_opportunity ? '+$' + Number(report.total_opportunity).toLocaleString() + '/yr' : '—';
+  document.getElementById('rpt-flagged').textContent = report.flagged_services ?? '—';
+  document.getElementById('rpt-analyzed').textContent = report.total_services ?? '—';
+
+  // Score delta vs previous report
+  const idx = ALL_REPORTS.findIndex(r => r.id === reportId);
+  const prev = ALL_REPORTS[idx + 1];
+  const deltaEl = document.getElementById('rpt-score-delta');
+  if (prev && prev.health_score != null && report.health_score != null) {
+    const d = report.health_score - prev.health_score;
+    deltaEl.innerHTML = d >= 0
+      ? `<span style="color:rgba(255,255,255,0.9)">▲ +${d} vs ${formatReportTitle(prev)}</span>`
+      : `<span style="color:rgba(255,220,100,0.95)">▼ ${d} vs ${formatReportTitle(prev)}</span>`;
+  } else { deltaEl.textContent = ''; }
+
+  // Score context paragraph
+  const flaggedPct = report.total_services > 0 ? Math.round(report.flagged_services / report.total_services * 100) : 0;
+  const cpiStr = report.cpi_rate ? (report.cpi_rate * 100).toFixed(1) + '%' : 'CPI';
+  const scoreLabel = report.health_score >= 80 ? 'strong' : report.health_score >= 60 ? 'fair' : 'below target';
+  document.getElementById('rpt-score-context').innerHTML =
+    `Your pricing health score is <strong>${report.health_score}/100</strong> — ${scoreLabel}. ` +
+    `Out of <strong>${Number(report.total_services).toLocaleString()} active services</strong> analyzed, ` +
+    `<strong>${report.flagged_services} (${flaggedPct}%)</strong> haven't kept pace with Canada's ${cpiStr} annual inflation rate. ` +
+    `If those services were updated to the suggested prices, the estimated annual revenue gain would be ` +
+    `<strong style="color:var(--success)">+$${Number(report.total_opportunity).toLocaleString()}/yr</strong>. ` +
+    (prev ? `Your score ${report.health_score >= prev.health_score ? 'improved' : 'declined'} from ${prev.health_score} in the ${formatReportTitle(prev)}.` : 'This is your first pricing report.');
+
+  // Load suggestions for this report
+  document.getElementById('approval-list').innerHTML = '<p style="color:var(--muted);text-align:center;padding:1.5rem;font-size:0.85rem">Loading…</p>';
+  document.getElementById('rpt-confirm-bar').style.display = 'none';
+  ITEMS = [];
+  approved.clear(); skipped.clear();
+  updateConfirmBar();
+
+  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + reportId + '&status=eq.pending&select=*&order=est_uplift.desc');
+  ITEMS = recRes.ok ? await recRes.json() : [];
+
+  document.getElementById('btn-approve-all-count').textContent = ITEMS.length;
+  document.getElementById('total-items').textContent = ITEMS.length;
+
+  if (ITEMS.length) {
+    document.getElementById('approval-list').innerHTML = ITEMS.map(renderItem).join('');
+    // re-attach event listeners
+    document.querySelectorAll('[data-code]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.dataset.code;
+        const item = ITEMS.find(i => i.service_code === code);
+        if (item) { approved.has(code) ? unapprove(code) : approve(code); }
+      });
+    });
+    document.getElementById('rpt-confirm-bar').style.display = 'flex';
+    updateConfirmBar();
+
+    // Top opportunities chart
+    renderTopItems(ITEMS.slice(0, 8));
+  } else {
+    document.getElementById('approval-list').innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.85rem">No suggestions for this report — all prices were current at the time of analysis.</p>';
+    document.getElementById('rpt-top-items').innerHTML = '<p style="color:var(--muted);font-size:0.85rem">No items to display.</p>';
+  }
+
+  // Distribution breakdown (pull from all items, bucketize by pct change)
+  renderDistribution(ITEMS);
+}
+
+function renderTopItems(items) {
+  const maxUplift = Math.max(...items.map(i => realUplift(i)));
+  document.getElementById('rpt-top-items').innerHTML = items.map(item => {
+    const u = realUplift(item);
+    const w = maxUplift > 0 ? Math.round((u / maxUplift) * 100) : 0;
+    const pctChange = item.price_old > 0 ? ((item.price_new - item.price_old) / item.price_old * 100).toFixed(1) : '—';
+    return `
+    <div style="margin-bottom:0.65rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.82rem">
+        <span style="color:var(--text);font-weight:600">${item.service_name || item.service_code}</span>
+        <span style="color:var(--success);font-weight:700">+$${u.toLocaleString()}/yr</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <div style="flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${w}%;background:var(--success);border-radius:4px;transition:width 0.4s"></div>
+        </div>
+        <span style="font-size:0.72rem;color:var(--muted);white-space:nowrap">${fmt$(item.price_old)} → ${fmt$(item.price_new)} (+${pctChange}%)</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDistribution(items) {
+  // Bucket by YoY stale_pct (stored in description? — use price delta as proxy)
+  // Buckets: Declined (<0%), Flat (0-1%), Below CPI (1-4.38%), At/Above CPI (>4.38%)
+  // Since we only have flagged items (all below threshold), show breakdown by severity
+  const buckets = [
+    { label: 'Price declined',    min: -Infinity, max: 0,    color: '#ef4444', count: 0, uplift: 0 },
+    { label: 'Flat (0–1%)',       min: 0,         max: 0.01, color: '#f97316', count: 0, uplift: 0 },
+    { label: 'Below inflation',   min: 0.01,      max: 0.044,color: '#eab308', count: 0, uplift: 0 },
+  ];
+  // We don't store YoY pct in price_recommendations, so bucket by uplift magnitude
+  // As a proxy: high uplift = more stale
+  const highThresh  = items.length ? (items[0] ? realUplift(items[0]) * 0.5 : 1000) : 1000;
+  const buckets2 = [
+    { label: 'High impact (top opportunity)',  filter: i => realUplift(i) >= highThresh,           color: '#ef4444' },
+    { label: 'Medium impact',                  filter: i => realUplift(i) >= 200 && realUplift(i) < highThresh, color: '#f97316' },
+    { label: 'Low impact (minor adjustment)',   filter: i => realUplift(i) < 200,                  color: '#eab308' },
+  ].map(b => ({ ...b, items: items.filter(b.filter) }));
+
+  const total = items.length || 1;
+  document.getElementById('rpt-distribution').innerHTML = buckets2.map(b => {
+    const pct = Math.round(b.items.length / total * 100);
+    const uplift = b.items.reduce((s, i) => s + realUplift(i), 0);
+    return `
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.8rem">
+        <span style="color:var(--text)">${b.label}</span>
+        <span style="color:var(--muted)">${b.items.length} services · +$${uplift.toLocaleString()}/yr</span>
+      </div>
+      <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${b.color};border-radius:4px"></div>
       </div>
     </div>`;
   }).join('');
@@ -897,33 +1121,19 @@ function renderReports(reports) {
 async function init() {
   const el = (id) => document.getElementById(id);
 
-  // ─── Reports tab — load all reports for this clinic ───
+  // ─── Reports tab — load all reports, render list, auto-open latest ───
   const rptRes = await sbFetch('/rest/v1/clinic_reports?clinic_id=eq.' + CLINIC_ID + '&order=created_at.desc&select=*');
-  const allReports = rptRes.ok ? await rptRes.json() : [];
-  el('reports-list').innerHTML = renderReports(allReports);
+  ALL_REPORTS = rptRes.ok ? await rptRes.json() : [];
+  el('reports-list').innerHTML = renderReports(ALL_REPORTS);
 
-  // ─── Suggestions (Approve tab) — use most recent active report's review_id ───
-  const activeReport = allReports.find(r => r.status === 'active') || allReports[0];
-  const activeReviewId = activeReport ? activeReport.id : REVIEW_ID;
-  if (activeReport) {
-    el('suggestions-title').textContent = formatReportTitle(activeReport) + ' — Suggestions';
-    el('suggestions-sub').textContent = 'Based on your ' + formatReportDate(activeReport.report_date) + ' report · You have the final say on every item';
-  }
+  const activeReport = ALL_REPORTS.find(r => r.status === 'active') || ALL_REPORTS[0];
 
-  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + activeReviewId + '&status=eq.pending&select=*');
-  const allRecs = recRes.ok ? await recRes.json() : [];
-  const summaryRow = null; // now stored in clinic_reports
-  ITEMS = allRecs;
-
-  const list = el('approval-list');
-  list.innerHTML = ITEMS.length ? ITEMS.map(renderItem).join('') : '<p style="color:var(--muted);text-align:center;padding:2rem;">No pending items for this review.</p>';
-
-  const totalUplift = ITEMS.reduce((s, i) => s + realUplift(i), 0);
-  el('hero-count').textContent = ITEMS.length;
-  el('hero-uplift').textContent = '+$' + totalUplift.toLocaleString();
-  el('total-items').textContent = ITEMS.length;
-  el('btn-approve-all-count').textContent = ITEMS.length;
-  el('pending-badge').textContent = ITEMS.length;
+  // Dashboard KPI: pending suggestion count from latest report
+  const totalUplift = activeReport ? Number(activeReport.total_opportunity) || 0 : 0;
+  const pendingCount = activeReport ? Number(activeReport.flagged_services) || 0 : 0;
+  el('total-items') && (el('total-items').textContent = pendingCount);
+  el('btn-approve-all-count') && (el('btn-approve-all-count').textContent = pendingCount);
+  el('pending-badge') && (el('pending-badge').textContent = pendingCount);
 
   // ─── Approvals (History + Dashboard) ───
   const appRes = await sbFetch('/rest/v1/price_approvals?clinic_id=eq.' + CLINIC_ID + '&select=*&order=approved_at.desc');
@@ -935,14 +1145,16 @@ async function init() {
   const recovered = approvals.reduce((s, a) => s + Math.round(Number(a.annual_volume || 0) * (Number(a.price_new || 0) - Number(a.price_old || 0))), 0);
   if (el('kpi-recovered')) el('kpi-recovered').textContent = '$' + recovered.toLocaleString();
   if (el('kpi-pending-uplift')) el('kpi-pending-uplift').textContent = '+$' + totalUplift.toLocaleString();
-  if (el('kpi-pending-count')) el('kpi-pending-count').textContent = ITEMS.length + ' item' + (ITEMS.length !== 1 ? 's' : '') + ' awaiting sign-off';
+  if (el('kpi-pending-count')) el('kpi-pending-count').textContent = pendingCount + ' item' + (pendingCount !== 1 ? 's' : '') + ' in latest report';
 
   // Pending callout
-  if (ITEMS.length > 0) {
+  if (pendingCount > 0) {
     const callout = el('pending-callout');
-    callout.style.display = 'flex';
-    el('callout-title').textContent = 'You have ' + ITEMS.length + ' pricing item' + (ITEMS.length !== 1 ? 's' : '') + ' ready for review';
-    el('callout-sub').textContent = 'Est. +$' + totalUplift.toLocaleString() + '/yr if approved · takes about 2 minutes';
+    if (callout) {
+      callout.style.display = 'flex';
+      el('callout-title').textContent = 'You have ' + pendingCount + ' pricing item' + (pendingCount !== 1 ? 's' : '') + ' in your latest report';
+      el('callout-sub').textContent = 'Est. +$' + totalUplift.toLocaleString() + '/yr · View in Reports tab';
+    }
   }
 
   // ─── Revenue (Dashboard) ───
