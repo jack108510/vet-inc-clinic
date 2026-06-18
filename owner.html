@@ -441,14 +441,14 @@ body {
 
 <!-- TAB NAV -->
 <nav class="tab-nav">
+  <button class="tab-btn" onclick="showTab('dashboard', this)" id="tab-btn-dashboard">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+    My Dashboard
+  </button>
   <button class="tab-btn" onclick="showTab('approve', this)" id="tab-btn-approve">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
     Approve Prices
     <span class="tab-badge" id="pending-badge">6</span>
-  </button>
-  <button class="tab-btn" onclick="showTab('dashboard', this)">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
-    My Dashboard
   </button>
   <button class="tab-btn" onclick="showTab('history', this)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -461,7 +461,7 @@ body {
 </nav>
 
 <!-- ─────────────────────── APPROVE TAB ─────────────────────── -->
-<section id="tab-approve" class="section active">
+<section id="tab-approve" class="section">
 
   <div class="review-hero">
     <div class="review-hero-text">
@@ -626,7 +626,7 @@ body {
 </section>
 
 <!-- ─────────────────────── DASHBOARD TAB ─────────────────────── -->
-<section id="tab-dashboard" class="section">
+<section id="tab-dashboard" class="section active">
   <div class="section-header">
     <div class="section-title">My Dashboard</div>
     <div class="section-sub">Rosslyn Veterinary Clinic · Updated June 18, 2026</div>
@@ -976,9 +976,14 @@ function submitSuggestion() {
   ['sug-name','sug-code','sug-current','sug-new','sug-reason'].forEach(id => document.getElementById(id).value = '');
 }
 
-// Auto-activate approve tab button when coming from email link
-const tabBtn = document.getElementById('tab-btn-approve');
-tabBtn.classList.add('active');
+// If opened from email link (has ?review= param), jump straight to Approve tab; otherwise show Dashboard
+if (new URLSearchParams(window.location.search).get('review')) {
+  document.getElementById('tab-btn-approve').classList.add('active');
+  document.getElementById('tab-dashboard').classList.remove('active');
+  document.getElementById('tab-approve').classList.add('active');
+} else {
+  document.getElementById('tab-btn-dashboard').classList.add('active');
+}
 
 </script>
 </body>
