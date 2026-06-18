@@ -49,14 +49,16 @@ async function runSQL(query) {
 }
 
 // Thresholds
-const MIN_ANNUAL_VOLUME    = 15;   // skip services with fewer than this visits/yr
-const STALE_THRESHOLD      = 0.03; // flag if price grew < 3% year-over-year
-const SUGGESTED_INCREASE   = 0.08; // suggest 8% increase (CPI-aligned)
-// No cap — all flagged services are included in the review
+const MIN_ANNUAL_VOLUME    = 15;   // skip services with fewer than this visits/yr in last 12 months
+const ACTIVE_DAYS          = 90;   // service must have been billed within this many days to be "active"
+const STALE_THRESHOLD      = 0.03; // flag if price grew < 3% year-over-year (below CPI)
+const SUGGESTED_INCREASE   = 0.08; // suggest 8% increase (CPI + margin buffer)
+// No cap — all flagged active services are included in the review
 
-const now        = new Date();
-const oneYearAgo = new Date(now); oneYearAgo.setFullYear(now.getFullYear() - 1);
-const twoYearAgo = new Date(now); twoYearAgo.setFullYear(now.getFullYear() - 2);
+const now          = new Date();
+const oneYearAgo   = new Date(now); oneYearAgo.setFullYear(now.getFullYear() - 1);
+const twoYearAgo   = new Date(now); twoYearAgo.setFullYear(now.getFullYear() - 2);
+const activeCutoff = new Date(now); activeCutoff.setDate(now.getDate() - ACTIVE_DAYS);
 
 function isoDate(d) { return d.toISOString().slice(0, 10); }
 function fmt$(n)    { return '$' + Number(n).toFixed(2); }
@@ -77,30 +79,68 @@ async function getAggregatePrices(dateFrom, dateTo) {
   return rows;
 }
 
+async function getActiveCodes() {
+  // Returns the set of service codes billed within the last ACTIVE_DAYS days.
+  // A code not billed recently is considered discontinued and excluded from recommendations.
+  const rows = await runSQL(`
+    SELECT DISTINCT code
+    FROM services
+    WHERE service_date >= '${isoDate(activeCutoff)}'
+      AND amount > 0
+      AND code IS NOT NULL AND code <> ''
+  `);
+  return new Set(rows.map(r => r.code));
+}
+
 async function main() {
   console.log(`\n=== Vet INC Pricing Analysis ===`);
-  console.log(`Clinic: ${CLINIC_ID} | Review: ${REVIEW_ID}`);
-  console.log(`Scanning services from ${isoDate(oneYearAgo)} to ${isoDate(now)}\n`);
+  console.log(`Clinic: ${CLINIC_ID} | Review: ${REVIEW_ID}\n`);
 
-  // 1. Recent prices (last 12 months)
+  // 0. Determine the most recent data date (ETL may not be up to today)
+  const [dateRow] = await runSQL(`SELECT MAX(service_date)::date AS latest FROM services WHERE amount > 0`);
+  const latestDate = new Date(dateRow.latest + 'T00:00:00');
+  const dataOneYearAgo = new Date(latestDate); dataOneYearAgo.setFullYear(latestDate.getFullYear() - 1);
+  const dataTwoYearAgo = new Date(latestDate); dataTwoYearAgo.setFullYear(latestDate.getFullYear() - 2);
+  const dataActiveCutoff = new Date(latestDate); dataActiveCutoff.setDate(latestDate.getDate() - ACTIVE_DAYS);
+
+  console.log(`Data current through: ${isoDate(latestDate)}`);
+  console.log(`Active window:        last ${ACTIVE_DAYS} days (since ${isoDate(dataActiveCutoff)})`);
+  console.log(`Recent window:        ${isoDate(dataOneYearAgo)} → ${isoDate(latestDate)}`);
+  console.log(`Historical window:    ${isoDate(dataTwoYearAgo)} → ${isoDate(dataOneYearAgo)}\n`);
+
+  // 1. Active service codes — billed in last 90 days (relative to latest data)
+  console.log(`Fetching active service codes (billed in last ${ACTIVE_DAYS} days)…`);
+  const rows_active = await runSQL(`
+    SELECT DISTINCT code
+    FROM services
+    WHERE service_date >= '${isoDate(dataActiveCutoff)}'
+      AND amount > 0
+      AND code IS NOT NULL AND code <> ''
+  `);
+  const activeCodes = new Set(rows_active.map(r => r.code));
+  console.log(`  ${activeCodes.size.toLocaleString()} active codes`);
+
+  // 2. Recent prices (last 12 months relative to latest data)
   console.log('Fetching recent prices (last 12 months)…');
-  const recent = await getAggregatePrices(oneYearAgo, null);
-  console.log(`  ${recent.length.toLocaleString()} distinct service codes found`);
+  const recent = await getAggregatePrices(dataOneYearAgo, latestDate);
+  // Filter to only active codes
+  const recentActive = recent.filter(r => activeCodes.has(r.code));
+  console.log(`  ${recent.length.toLocaleString()} total codes, ${recentActive.length.toLocaleString()} active`);
 
-  // 2. Historical prices (12–24 months ago)
+  // 3. Historical prices (12–24 months ago relative to latest data)
   console.log('Fetching historical prices (12–24 months ago)…');
-  const historical = await getAggregatePrices(twoYearAgo, oneYearAgo);
+  const historical = await getAggregatePrices(dataTwoYearAgo, dataOneYearAgo);
   const histMap = {};
   for (const h of historical) {
     histMap[h.code] = parseFloat(h.avg_price) || 0;
   }
   console.log(`  ${historical.length.toLocaleString()} codes with historical data`);
 
-  // 4. Score each service
+  // 4. Score each active service
   console.log('Analyzing pricing gaps…\n');
   const flagged = [];
 
-  for (const row of recent) {
+  for (const row of recentActive) {
     const code      = row.code;
     const avgPrice  = parseFloat(row.avg_price) || 0;
     const annualVol = parseInt(row.cnt)          || 0;
@@ -139,9 +179,10 @@ async function main() {
     });
   }
 
-  // Sort by estimated uplift descending — all flagged services included
+  // Sort by estimated uplift descending — all flagged active services included
   flagged.sort((a, b) => b.est_uplift - a.est_uplift);
-  const totalAnalyzed = recent.length;
+  // totalAnalyzed = active codes with enough volume to be meaningful
+  const totalAnalyzed = recentActive.filter(r => parseFloat(r.avg_price) > 0 && parseInt(r.cnt) >= MIN_ANNUAL_VOLUME).length;
   const healthScore   = Math.round((1 - flagged.length / totalAnalyzed) * 100);
   const totalUplift   = flagged.reduce((s, i) => s + i.est_uplift, 0);
 
