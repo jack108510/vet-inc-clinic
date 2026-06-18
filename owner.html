@@ -18,11 +18,11 @@
   --text: #1e3a5f;
   --muted: #64748b;
   --green: #16a34a;
-  --red: #ef4444;
+  --red: #2563eb;
   --purple: #7c3aed;
   --emerald: #059669;
-  --orange: #ea580c;
-  --yellow: #d97706;
+  --orange: #2563eb;
+  --yellow: #0ea5e9;
 }
 
 body {
@@ -90,7 +90,7 @@ body {
 .tab-btn:hover { background: var(--surface2); color: var(--text); }
 .tab-btn.active { background: var(--primary); color: #fff; }
 .tab-badge {
-  background: #ef4444;
+  background: var(--green);
   color: #fff;
   font-size: 0.65rem;
   font-weight: 800;
@@ -123,7 +123,7 @@ body {
   background: linear-gradient(90deg, var(--primary), var(--primary-light));
 }
 .kpi-card.green::before { background: linear-gradient(90deg, #16a34a, #4ade80); }
-.kpi-card.orange::before { background: linear-gradient(90deg, #ea580c, #fb923c); }
+.kpi-card.orange::before { background: linear-gradient(90deg, #2563eb, #60a5fa); }
 .kpi-label { font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
 .kpi-value { font-size: 1.75rem; font-weight: 900; color: var(--text); line-height: 1.1; }
 .kpi-sub { font-size: 0.76rem; color: var(--muted); margin-top: 0.35rem; }
@@ -326,7 +326,7 @@ body {
 }
 .timeline-tag.blue { background: #dbeafe; color: var(--primary); }
 .timeline-tag.green { background: #dcfce7; color: var(--green); }
-.timeline-tag.orange { background: #ffedd5; color: var(--orange); }
+.timeline-tag.orange { background: #dbeafe; color: var(--primary); }
 
 /* ─── SUGGESTIONS SECTION ─── */
 .suggest-form {
@@ -375,7 +375,7 @@ body {
   padding: 3px 10px; border-radius: 999px;
   text-transform: uppercase; letter-spacing: 0.05em;
 }
-.suggestion-status.pending { background: #fef9c3; color: var(--yellow); }
+.suggestion-status.pending { background: #dbeafe; color: var(--primary); }
 .suggestion-status.submitted { background: #dbeafe; color: var(--primary); }
 
 /* ─── APPROVED MODAL ─── */
@@ -423,7 +423,7 @@ body {
 <header class="header">
   <div class="header-left">
     <div class="logo-wrap">
-      <img src="https://raw.githubusercontent.com/jack108510/vet-inc-clinic/main/logo.png" alt="Vet INC" height="32" style="display:block;height:32px;width:auto;" />
+      <img src="https://raw.githubusercontent.com/jack108510/vet-inc-clinic/main/logo.png" alt="Vet INC" height="48" style="display:block;height:48px;width:auto;" />
     </div>
     <div class="header-divider"></div>
     <div class="clinic-name">Rosslyn Veterinary Clinic</div>
@@ -552,19 +552,19 @@ body {
       <div class="card-title" style="margin:0">Daily Revenue — Last 30 Days</div>
       <div style="display:flex;gap:1rem;font-size:0.75rem;color:var(--muted)">
         <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--primary)"></span>Revenue</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:18px;height:2px;background:#fbbf24"></span>Target</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:18px;height:2px;background:#16a34a"></span>Target</span>
       </div>
     </div>
     <div id="revenue-chart-wrap" style="width:100%;min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.85rem">Loading chart…</div>
   </div>
 
   <!-- Pending action callout (shown if items pending) -->
-  <div id="pending-callout" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--orange);border-radius:12px;padding:1rem 1.25rem;display:none;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.5rem">
+  <div id="pending-callout" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid var(--primary);border-radius:12px;padding:1rem 1.25rem;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.5rem">
     <div>
-      <div style="font-size:0.88rem;font-weight:700;color:#92400e" id="callout-title">You have pricing items to review</div>
-      <div style="font-size:0.78rem;color:#b45309;margin-top:2px" id="callout-sub">Takes about 2 minutes</div>
+      <div style="font-size:0.88rem;font-weight:700;color:var(--text)" id="callout-title">You have pricing items to review</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:2px" id="callout-sub">Takes about 2 minutes</div>
     </div>
-    <button onclick="document.getElementById('tab-btn-approve').click()" style="background:var(--orange);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap">Review Now →</button>
+    <button onclick="document.getElementById('tab-btn-approve').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap">Review Now →</button>
   </div>
 
 </section>
@@ -872,7 +872,7 @@ async function init() {
       el('kpi-daily-avg').textContent = '$' + Math.round(avgDaily).toLocaleString();
       if (el('kpi-daily-sub') && target > 0) {
         const pct = Math.round((avgDaily / target) * 100);
-        const color = pct >= 100 ? 'var(--green)' : pct >= 80 ? 'var(--yellow)' : 'var(--red)';
+        const color = pct >= 100 ? 'var(--green)' : 'var(--primary)';
         el('kpi-daily-sub').innerHTML = '<span style="color:' + color + ';font-weight:700">' + pct + '% of $' + Math.round(target / 1000) + 'K target</span>';
       }
     }
@@ -915,7 +915,7 @@ async function init() {
       }).join('');
 
       const targetLine = targetY !== null
-        ? '<line x1="' + PAD + '" y1="' + targetY + '" x2="' + (W - PAD) + '" y2="' + targetY + '" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.9"/>'
+        ? '<line x1="' + PAD + '" y1="' + targetY + '" x2="' + (W - PAD) + '" y2="' + targetY + '" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.9"/>'
         : '';
 
       el('revenue-chart-wrap').innerHTML =
