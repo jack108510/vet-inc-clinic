@@ -621,7 +621,7 @@ body {
 
     <!-- Propose change form -->
     <div class="card">
-      <div class="card-title">Propose a Price Change</div>
+      <div class="card-title">Change Price</div>
       <div class="form-row">
         <div class="form-group">
           <label>Current Price</label>
@@ -637,8 +637,8 @@ body {
         <label>Reason (optional)</label>
         <textarea id="change-reason" placeholder="Market rate, cost increase, competitor pricing, gut feel — all valid"></textarea>
       </div>
-      <button class="btn-submit" id="submit-change-btn" onclick="submitPriceChange()" disabled>Submit for Approval</button>
-      <p style="margin-top:0.6rem;font-size:0.75rem;color:var(--muted)">Submitted changes go into your Approve Prices queue for final confirmation.</p>
+      <button class="btn-submit" id="submit-change-btn" onclick="submitPriceChange()" disabled>Apply Price Change</button>
+      <p style="margin-top:0.6rem;font-size:0.75rem;color:var(--muted)">Changes take effect immediately and are recorded in your price history.</p>
     </div>
 
   </div>
@@ -1094,7 +1094,7 @@ async function submitPriceChange() {
   const newPrice = parseFloat(el('change-new').value);
   if (!newPrice || newPrice <= 0) { alert('Enter a valid new price.'); return; }
   const btn = el('submit-change-btn');
-  btn.disabled = true; btn.textContent = 'Submitting…';
+  btn.disabled = true; btn.textContent = 'Applying…';
 
   const row = {
     clinic_id: CLINIC_ID,
@@ -1106,10 +1106,10 @@ async function submitPriceChange() {
     source: 'owner',
     annual_volume: selectedService.annualVolume,
     est_uplift: Math.round((newPrice - selectedService.avgPrice) * selectedService.annualVolume),
-    status: 'pending'
+    status: 'approved'
   };
 
-  const res = await fetch(SB_URL + '/rest/v1/price_recommendations', {
+  const res = await fetch(SB_URL + '/rest/v1/price_approvals', {
     method: 'POST',
     headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
     body: JSON.stringify(row)
@@ -1117,17 +1117,17 @@ async function submitPriceChange() {
 
   if (!res.ok) {
     alert('Error: ' + await res.text());
-    btn.disabled = false; btn.textContent = 'Submit for Approval';
+    btn.disabled = false; btn.textContent = 'Apply Price Change';
     return;
   }
 
-  btn.textContent = 'Submitted ✓';
+  btn.textContent = 'Applied ✓';
   el('svc-history').innerHTML = '<div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid var(--border)">' +
-    '<span class="svc-change-tag" style="background:#dbeafe;color:var(--primary)">Pending</span>' +
-    '<div style="flex:1;font-size:0.85rem;color:var(--muted)">Awaiting approval</div>' +
-    '<div style="font-size:0.9rem;font-weight:700;color:var(--primary)">' + fmt$(row.price_old) + ' → ' + fmt$(row.price_new) + '</div>' +
+    '<span class="svc-change-tag" style="background:#dcfce7;color:var(--success)">Applied</span>' +
+    '<div style="flex:1;font-size:0.85rem;color:var(--muted)">Owner change — effective now</div>' +
+    '<div style="font-size:0.9rem;font-weight:700;color:var(--success)">' + fmt$(row.price_old) + ' → ' + fmt$(row.price_new) + '</div>' +
     '</div>' + el('svc-history').innerHTML;
-  setTimeout(() => { btn.textContent = 'Submit for Approval'; el('change-new').value = ''; el('change-reason').value = ''; el('impact-preview').style.display = 'none'; btn.disabled = true; }, 2500);
+  setTimeout(() => { btn.textContent = 'Apply Price Change'; el('change-new').value = ''; el('change-reason').value = ''; el('impact-preview').style.display = 'none'; btn.disabled = true; }, 2500);
 }
 
 // Helper
