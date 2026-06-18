@@ -52,7 +52,7 @@ async function runSQL(query) {
 const MIN_ANNUAL_VOLUME    = 15;   // skip services with fewer than this visits/yr
 const STALE_THRESHOLD      = 0.03; // flag if price grew < 3% year-over-year
 const SUGGESTED_INCREASE   = 0.08; // suggest 8% increase (CPI-aligned)
-const MAX_RECOMMENDATIONS  = 30;   // cap the review list
+// No cap — all flagged services are included in the review
 
 const now        = new Date();
 const oneYearAgo = new Date(now); oneYearAgo.setFullYear(now.getFullYear() - 1);
@@ -139,35 +139,59 @@ async function main() {
     });
   }
 
-  // Sort by estimated uplift descending, cap at MAX_RECOMMENDATIONS
+  // Sort by estimated uplift descending — all flagged services included
   flagged.sort((a, b) => b.est_uplift - a.est_uplift);
-  const toInsert = flagged.slice(0, MAX_RECOMMENDATIONS);
+  const totalAnalyzed = recent.length;
+  const healthScore   = Math.round((1 - flagged.length / totalAnalyzed) * 100);
+  const totalUplift   = flagged.reduce((s, i) => s + i.est_uplift, 0);
 
-  console.log(`Found ${flagged.length} services with stale pricing`);
-  console.log(`Top ${toInsert.length} by annual uplift:\n`);
+  console.log(`Found ${flagged.length} of ${totalAnalyzed} services with stale pricing`);
+  console.log(`Health score: ${healthScore}/100`);
+  console.log(`Top 10 by annual uplift:\n`);
 
-  let totalUplift = 0;
-  for (const item of toInsert.slice(0, 10)) {
+  for (const item of flagged.slice(0, 10)) {
     const tag = item.stale_pct !== null ? `(${item.stale_pct}% YoY)` : '(no prior year)';
     console.log(`  ${item.service_code.padEnd(10)} ${fmt$(item.price_old)} → ${fmt$(item.price_new)}  ${item.annual_volume} visits/yr  +$${item.est_uplift.toLocaleString()}/yr  ${tag}`);
-    totalUplift += item.est_uplift;
   }
-  if (toInsert.length > 10) console.log(`  … and ${toInsert.length - 10} more`);
-  console.log(`\n  Combined uplift potential: +$${toInsert.reduce((s, i) => s + i.est_uplift, 0).toLocaleString()}/yr`);
+  if (flagged.length > 10) console.log(`  … and ${flagged.length - 10} more`);
+  console.log(`\n  Combined uplift potential: +$${totalUplift.toLocaleString()}/yr`);
 
-  // 5. Write to Supabase — delete old pending for this review, insert new
+  // 5. Write to Supabase — clear old pending rows, insert all flagged + summary meta row
   console.log(`\nWriting to price_recommendations…`);
 
-  // Delete existing pending rows for this clinic/review
-  const delRes = await fetch(
-    `${SB_URL}/rest/v1/price_recommendations?clinic_id=eq.${CLINIC_ID}&review_id=eq.${REVIEW_ID}&status=eq.pending`,
-    { method: 'DELETE', headers: HEADERS }
-  );
-  if (!delRes.ok) console.warn('  Warning: could not clear old rows:', await delRes.text());
-  else console.log(`  Cleared existing pending rows for ${REVIEW_ID}`);
+  // Delete existing pending + meta rows for this clinic/review
+  for (const status of ['pending', 'meta']) {
+    const delRes = await fetch(
+      `${SB_URL}/rest/v1/price_recommendations?clinic_id=eq.${CLINIC_ID}&review_id=eq.${REVIEW_ID}&status=eq.${status}`,
+      { method: 'DELETE', headers: HEADERS }
+    );
+    if (!delRes.ok) console.warn(`  Warning: could not clear ${status} rows:`, await delRes.text());
+  }
+  console.log(`  Cleared existing rows for ${REVIEW_ID}`);
 
-  // Insert in batches of 50
-  const rows = toInsert.map(({ stale_pct, ...rest }) => rest); // strip internal field
+  // Write summary meta row — dashboard reads this for real health score
+  const metaRow = {
+    clinic_id:    CLINIC_ID,
+    review_id:    REVIEW_ID,
+    service_code: '_summary',
+    service_name: 'Analysis Summary',
+    price_old:    0,
+    price_new:    0,
+    source:       'ai-analysis',
+    annual_volume: totalAnalyzed,   // total services scanned
+    est_uplift:    flagged.length,  // number flagged
+    status:       'meta'
+  };
+  const metaRes = await fetch(`${SB_URL}/rest/v1/price_recommendations`, {
+    method: 'POST',
+    headers: { ...HEADERS, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(metaRow)
+  });
+  if (!metaRes.ok) console.warn('  Warning: could not write summary row:', await metaRes.text());
+  else console.log(`  Summary: ${flagged.length} flagged / ${totalAnalyzed} analyzed → score ${healthScore}`);
+
+  // Insert all flagged rows in batches of 50
+  const rows = flagged.map(({ stale_pct, ...rest }) => rest);
   const BATCH = 50;
   let inserted = 0;
   for (let i = 0; i < rows.length; i += BATCH) {
@@ -184,8 +208,8 @@ async function main() {
       process.stdout.write(`\r  Inserted ${inserted}/${rows.length} rows…`);
     }
   }
-  console.log(`\n\n✅ Done. ${inserted} recommendations written to price_recommendations.`);
-  console.log(`   Review ID: ${REVIEW_ID} | Clinic: ${CLINIC_ID}`);
+  console.log(`\n\n✅ Done. ${inserted} price recommendations written.`);
+  console.log(`   Review ID: ${REVIEW_ID} | Clinic: ${CLINIC_ID} | Score: ${healthScore}/100`);
   console.log(`   View in portal: https://jack108510.github.io/vet-inc-clinic/owner.html?review=${REVIEW_ID}&clinic=${CLINIC_ID}\n`);
 }
 

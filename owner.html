@@ -821,9 +821,11 @@ function renderHistory(approvals) {
 async function init() {
   const el = (id) => document.getElementById(id);
 
-  // ─── Recommendations (Approve tab) ───
-  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + REVIEW_ID + '&status=eq.pending&select=*');
-  ITEMS = recRes.ok ? await recRes.json() : [];
+  // ─── Recommendations (Approve tab) + summary meta row ───
+  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + REVIEW_ID + '&select=*');
+  const allRecs = recRes.ok ? await recRes.json() : [];
+  const summaryRow = allRecs.find(r => r.service_code === '_summary' && r.status === 'meta');
+  ITEMS = allRecs.filter(r => r.status === 'pending');
 
   const list = el('approval-list');
   list.innerHTML = ITEMS.length ? ITEMS.map(renderItem).join('') : '<p style="color:var(--muted);text-align:center;padding:2rem;">No pending items for this review.</p>';
@@ -881,18 +883,34 @@ async function init() {
     // Section subtitle
     if (el('dash-sub')) el('dash-sub').textContent = 'Rosslyn Veterinary Clinic · Updated ' + new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
 
-    // Health score
-    const score = ITEMS.length === 0 ? 97 : ITEMS.length <= 2 ? 88 : ITEMS.length <= 5 ? 76 : 64;
-    const scoreAfter = Math.min(97, score + ITEMS.length * 4);
+    // Health score — real calculation from analysis engine summary row
+    let score, totalAnalyzed, flaggedCount;
+    if (summaryRow) {
+      totalAnalyzed = Number(summaryRow.annual_volume) || 0; // total services scanned
+      flaggedCount  = Number(summaryRow.est_uplift)    || 0; // number flagged
+      score = totalAnalyzed > 0 ? Math.round((1 - flaggedCount / totalAnalyzed) * 100) : 97;
+    } else {
+      // Fallback if analysis hasn't been run yet
+      totalAnalyzed = 0;
+      flaggedCount  = ITEMS.length;
+      score = ITEMS.length === 0 ? 97 : Math.max(60, 97 - ITEMS.length);
+    }
+    const pendingCount = ITEMS.length;
+    const pendingUplift = ITEMS.reduce((s, i) => s + realUplift(i), 0);
+    const scoreAfter    = totalAnalyzed > 0
+      ? Math.round((1 - (flaggedCount - pendingCount) / totalAnalyzed) * 100)
+      : Math.min(97, score + pendingCount * 2);
     const healthLabel = score >= 90 ? 'Excellent' : score >= 80 ? 'Good' : score >= 70 ? 'Fair' : 'Needs Attention';
     if (el('health-score-val')) el('health-score-val').textContent = score;
     if (el('health-title')) el('health-title').textContent = 'Pricing Health: ' + healthLabel;
-    if (el('health-desc') && ITEMS.length > 0) {
-      el('health-desc').innerHTML = ITEMS.length + ' item' + (ITEMS.length !== 1 ? 's are' : ' is') + ' behind inflation or below market. Approving the current review would bring your score to <strong>' + scoreAfter + '</strong>.';
+    if (el('health-desc') && pendingCount > 0) {
+      const analysisSub = totalAnalyzed > 0 ? ` (${flaggedCount} of ${totalAnalyzed.toLocaleString()} services scanned)` : '';
+      el('health-desc').innerHTML = pendingCount + ' item' + (pendingCount !== 1 ? 's are' : ' is') + ' behind market rate' + analysisSub + '. Approving all would bring your score to <strong>' + scoreAfter + '</strong>.';
     } else if (el('health-desc')) {
-      el('health-desc').textContent = 'Your pricing is up to date. No pending items — great work.';
+      const analysisSub = totalAnalyzed > 0 ? ` ${totalAnalyzed.toLocaleString()} services analyzed.` : '';
+      el('health-desc').textContent = 'Your pricing is up to date.' + analysisSub;
     }
-    if (ITEMS.length > 0 && el('health-action')) {
+    if (pendingCount > 0 && el('health-action')) {
       el('health-action').innerHTML = '<button onclick="document.getElementById(\'tab-btn-approve\').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.82rem;font-weight:700;cursor:pointer">Review Now →</button>';
     }
 
