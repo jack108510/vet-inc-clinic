@@ -51,8 +51,32 @@ async function runSQL(query) {
 // Thresholds
 const MIN_ANNUAL_VOLUME    = 15;   // skip services with fewer than this visits/yr in last 12 months
 const ACTIVE_DAYS          = 90;   // service must have been billed within this many days to be "active"
-const STALE_THRESHOLD      = 0.03; // flag if price grew < 3% year-over-year (below CPI)
-const SUGGESTED_INCREASE   = 0.08; // suggest 8% increase (CPI + margin buffer)
+const CPI_BUFFER           = 0.02; // flag if price grew less than (CPI + this buffer) — rewards staying ahead of inflation
+// STALE_THRESHOLD is set dynamically from real CPI data at runtime (see fetchCPI)
+// SUGGESTED_INCREASE is set dynamically as CPI + 5% buffer
+
+async function fetchCPI() {
+  // World Bank API — Canada annual CPI inflation rate (FP.CPI.TOTL.ZG)
+  // Returns the most recent year available (typically prior year)
+  try {
+    const res = await fetch(
+      'https://api.worldbank.org/v2/country/CA/indicator/FP.CPI.TOTL.ZG?format=json&mrv=3&per_page=3',
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const [, data] = await res.json();
+    // Find most recent year with a value
+    const latest = data.find(d => d.value !== null);
+    if (!latest) throw new Error('No CPI data');
+    const rate = latest.value / 100;
+    console.log(`  CPI source: World Bank — Canada ${latest.date} annual inflation = ${(rate * 100).toFixed(2)}%`);
+    return { rate, year: latest.date };
+  } catch (err) {
+    const fallback = 0.027; // ~2.7% fallback if API unavailable
+    console.warn(`  CPI fetch failed (${err.message}) — using fallback ${(fallback * 100).toFixed(1)}%`);
+    return { rate: fallback, year: 'fallback' };
+  }
+}
 // No cap — all flagged active services are included in the review
 
 const now          = new Date();
@@ -95,6 +119,14 @@ async function getActiveCodes() {
 async function main() {
   console.log(`\n=== Vet INC Pricing Analysis ===`);
   console.log(`Clinic: ${CLINIC_ID} | Review: ${REVIEW_ID}\n`);
+
+  // Fetch real CPI — determines what counts as "stale"
+  console.log('Fetching Canada CPI (World Bank)…');
+  const { rate: cpiRate, year: cpiYear } = await fetchCPI();
+  const STALE_THRESHOLD    = cpiRate + CPI_BUFFER;         // stale if below CPI + buffer
+  const SUGGESTED_INCREASE = cpiRate + 0.05;               // suggest CPI + 5%
+  console.log(`  Stale threshold: ${(STALE_THRESHOLD * 100).toFixed(2)}% (CPI ${(cpiRate*100).toFixed(2)}% + ${(CPI_BUFFER*100).toFixed(0)}% buffer)`);
+  console.log(`  Suggested increase: ${(SUGGESTED_INCREASE * 100).toFixed(2)}% (CPI + 5% margin)\n`);
 
   // 0. Determine the most recent data date (ETL may not be up to today)
   const [dateRow] = await runSQL(`SELECT MAX(service_date)::date AS latest FROM services WHERE amount > 0`);
