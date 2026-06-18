@@ -470,11 +470,11 @@ body {
     </div>
     <div class="review-stats">
       <div class="review-stat">
-        <div class="review-stat-val">6</div>
+        <div class="review-stat-val" id="hero-count">…</div>
         <div class="review-stat-label">Items Flagged</div>
       </div>
       <div class="review-stat">
-        <div class="review-stat-val">+$6,840</div>
+        <div class="review-stat-val" id="hero-uplift">…</div>
         <div class="review-stat-label">Est. Annual Uplift</div>
       </div>
       <div class="review-stat">
@@ -486,137 +486,17 @@ body {
 
   <div class="approve-all-bar">
     <p>Reviewed by Vet INC AI and your consultant. <strong>You have the final say.</strong> Accept all, or review each item below.</p>
-    <button class="btn-approve-all" onclick="approveAll()">✓ Accept All 6 Changes</button>
+    <button class="btn-approve-all" onclick="approveAll()">✓ Accept All <span id="btn-approve-all-count">…</span> Changes</button>
   </div>
 
   <div id="approval-list">
-
-    <div class="approval-item" id="item-1">
-      <span class="ai-chip ai">AI</span>
-      <div class="item-info">
-        <div class="item-name">Comprehensive Exam</div>
-        <div class="item-code">Code: EX001 · Last changed 847 days ago</div>
-        <div class="item-reason">Price hasn't kept pace with CPI — 18.4% behind inflation since last update.</div>
-      </div>
-      <div class="price-change">
-        <span class="price-old">$89.00</span>
-        <span class="price-arrow">→</span>
-        <span class="price-new">$105.00</span>
-        <span class="price-delta">+$16</span>
-      </div>
-      <div class="price-uplift">~$3,200 / yr</div>
-      <div class="item-actions">
-        <button class="btn-approve" id="approve-1" onclick="toggleApprove(1)">✓ Approve</button>
-        <button class="btn-skip" onclick="skipItem(1)">Skip</button>
-      </div>
-    </div>
-
-    <div class="approval-item" id="item-2">
-      <span class="ai-chip ai">AI</span>
-      <div class="item-info">
-        <div class="item-name">Dental Cleaning (Grade 2)</div>
-        <div class="item-code">Code: DE204 · Last changed 612 days ago</div>
-        <div class="item-reason">Below .99 price point — rounding up captures missed margin on 220 annual transactions.</div>
-      </div>
-      <div class="price-change">
-        <span class="price-old">$285.00</span>
-        <span class="price-arrow">→</span>
-        <span class="price-new">$299.99</span>
-        <span class="price-delta">+$14.99</span>
-      </div>
-      <div class="price-uplift">~$1,540 / yr</div>
-      <div class="item-actions">
-        <button class="btn-approve" id="approve-2" onclick="toggleApprove(2)">✓ Approve</button>
-        <button class="btn-skip" onclick="skipItem(2)">Skip</button>
-      </div>
-    </div>
-
-    <div class="approval-item" id="item-3">
-      <span class="ai-chip consultant">Consultant</span>
-      <div class="item-info">
-        <div class="item-name">Feline Spay</div>
-        <div class="item-code">Code: SU310 · Last changed 1,104 days ago</div>
-        <div class="item-reason">Flagged by your consultant — regional average is $380–$420. Currently below market.</div>
-      </div>
-      <div class="price-change">
-        <span class="price-old">$310.00</span>
-        <span class="price-arrow">→</span>
-        <span class="price-new">$375.00</span>
-        <span class="price-delta">+$65</span>
-      </div>
-      <div class="price-uplift">~$910 / yr</div>
-      <div class="item-actions">
-        <button class="btn-approve" id="approve-3" onclick="toggleApprove(3)">✓ Approve</button>
-        <button class="btn-skip" onclick="skipItem(3)">Skip</button>
-      </div>
-    </div>
-
-    <div class="approval-item" id="item-4">
-      <span class="ai-chip ai">AI</span>
-      <div class="item-info">
-        <div class="item-name">Rabies Vaccine</div>
-        <div class="item-code">Code: VA102 · Last changed 390 days ago</div>
-        <div class="item-reason">Supplier cost increased 12% in Feb 2026. Suggested 5% margin bump on top of cost pass-through.</div>
-      </div>
-      <div class="price-change">
-        <span class="price-old">$38.00</span>
-        <span class="price-arrow">→</span>
-        <span class="price-new">$44.99</span>
-        <span class="price-delta">+$6.99</span>
-      </div>
-      <div class="price-uplift">~$560 / yr</div>
-      <div class="item-actions">
-        <button class="btn-approve" id="approve-4" onclick="toggleApprove(4)">✓ Approve</button>
-        <button class="btn-skip" onclick="skipItem(4)">Skip</button>
-      </div>
-    </div>
-
-    <div class="approval-item" id="item-5">
-      <span class="ai-chip ai">AI</span>
-      <div class="item-info">
-        <div class="item-name">Blood Panel — Full Chemistry</div>
-        <div class="item-code">Code: LA401 · Last changed 501 days ago</div>
-        <div class="item-reason">14.2% behind CPI since last price change. High-volume item — recovery significant.</div>
-      </div>
-      <div class="price-change">
-        <span class="price-old">$148.00</span>
-        <span class="price-arrow">→</span>
-        <span class="price-new">$169.99</span>
-        <span class="price-delta">+$21.99</span>
-      </div>
-      <div class="price-uplift">~$418 / yr</div>
-      <div class="item-actions">
-        <button class="btn-approve" id="approve-5" onclick="toggleApprove(5)">✓ Approve</button>
-        <button class="btn-skip" onclick="skipItem(5)">Skip</button>
-      </div>
-    </div>
-
-    <div class="approval-item" id="item-6">
-      <span class="ai-chip consultant">Consultant</span>
-      <div class="item-info">
-        <div class="item-name">Nail Trim</div>
-        <div class="item-code">Code: GR001 · Last changed 1,890 days ago</div>
-        <div class="item-reason">Not changed in over 5 years. Below market by ~$8. High volume makes this worth addressing.</div>
-      </div>
-      <div class="price-change">
-        <span class="price-old">$18.00</span>
-        <span class="price-arrow">→</span>
-        <span class="price-new">$24.99</span>
-        <span class="price-delta">+$6.99</span>
-      </div>
-      <div class="price-uplift">~$212 / yr</div>
-      <div class="item-actions">
-        <button class="btn-approve" id="approve-6" onclick="toggleApprove(6)">✓ Approve</button>
-        <button class="btn-skip" onclick="skipItem(6)">Skip</button>
-      </div>
-    </div>
-
+    <p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.9rem;">Loading items…</p>
   </div>
 
   <!-- STICKY CONFIRM BAR -->
   <div class="confirm-bar">
     <div class="confirm-summary">
-      <span id="approved-count">0</span> of 6 approved · Est. uplift: <span id="approved-uplift">$0</span> / yr
+      <span id="approved-count">0</span> of <span id="total-items">…</span> approved · Est. uplift: <span id="approved-uplift">$0</span> / yr
     </div>
     <button class="btn-confirm" id="confirm-btn" onclick="confirmApproval()" disabled>
       Confirm &amp; Apply Changes
@@ -646,27 +526,19 @@ body {
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-label">Annual Revenue</div>
-      <div class="kpi-value">$1.24M</div>
-      <div class="kpi-sub">Last 12 months · Rosslyn</div>
-      <div class="kpi-delta up">↑ 4.2% vs prior year</div>
+      <div class="kpi-value" id="kpi-annual-revenue">…</div>
+      <div class="kpi-sub">Last 365 days · Rosslyn</div>
     </div>
     <div class="kpi-card green">
       <div class="kpi-label">Recovered via Vet INC</div>
-      <div class="kpi-value">$18,400</div>
-      <div class="kpi-sub">Since onboarding · approved changes</div>
-      <div class="kpi-delta up">↑ 3 reviews completed</div>
+      <div class="kpi-value" id="kpi-recovered">…</div>
+      <div class="kpi-sub">Est. uplift from approved changes</div>
     </div>
     <div class="kpi-card orange">
       <div class="kpi-label">Pending Approval</div>
-      <div class="kpi-value">$6,840</div>
-      <div class="kpi-sub">Est. annual uplift if Q2 approved</div>
-      <div class="kpi-delta" style="color:var(--orange)">→ 6 items awaiting your sign-off</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Items Below Inflation</div>
-      <div class="kpi-value">42</div>
-      <div class="kpi-sub">Out of 318 active service codes</div>
-      <div class="kpi-delta down">↓ was 61 last quarter</div>
+      <div class="kpi-value" id="kpi-pending-uplift">…</div>
+      <div class="kpi-sub">Est. annual uplift if current review approved</div>
+      <div class="kpi-delta" id="kpi-pending-count" style="color:var(--orange)">→ … items awaiting your sign-off</div>
     </div>
   </div>
 
@@ -706,50 +578,9 @@ body {
   </div>
 
   <div class="card">
-    <div class="card-title">2026 Activity</div>
-    <div class="timeline">
-
-      <div class="timeline-item">
-        <div class="timeline-dot orange"></div>
-        <div class="timeline-date">Jun 18, 2026</div>
-        <div class="timeline-content">
-          <div class="timeline-title">Q2 Review Generated — Awaiting Approval</div>
-          <div class="timeline-detail">6 items flagged · Est. $6,840/yr uplift</div>
-          <span class="timeline-tag orange">Pending</span>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-dot green"></div>
-        <div class="timeline-date">Mar 12, 2026</div>
-        <div class="timeline-content">
-          <div class="timeline-title">Q1 Review Approved — 9 of 11 items accepted</div>
-          <div class="timeline-detail">Comprehensive Exam · Heartworm Test · Bordetella · +6 more · $8,200/yr recovered</div>
-          <span class="timeline-tag green">Applied</span>
-          <span class="timeline-tag blue">AI + Consultant</span>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-dot green"></div>
-        <div class="timeline-date">Dec 4, 2025</div>
-        <div class="timeline-content">
-          <div class="timeline-title">Q4 2025 Review Approved — 7 of 7 items accepted</div>
-          <div class="timeline-detail">Full acceptance · $5,100/yr recovered · Prices updated in AVImark Dec 5</div>
-          <span class="timeline-tag green">Applied</span>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-dot"></div>
-        <div class="timeline-date">Sep 8, 2025</div>
-        <div class="timeline-content">
-          <div class="timeline-title">Rosslyn onboarded to Vet INC</div>
-          <div class="timeline-detail">Initial data sync · 318 service codes imported · Baseline established</div>
-          <span class="timeline-tag blue">Onboarding</span>
-        </div>
-      </div>
-
+    <div class="card-title">Approval History</div>
+    <div class="timeline" id="history-timeline">
+      <p style="color:var(--muted);padding:1rem;font-size:0.88rem;">Loading…</p>
     </div>
   </div>
 </section>
@@ -833,42 +664,41 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const CLINIC_ID = new URLSearchParams(window.location.search).get('clinic') || 'rosslyn';
 const REVIEW_ID = new URLSearchParams(window.location.search).get('review') || 'q2-2026';
 
-const uplifts = { 1: 3200, 2: 1540, 3: 910, 4: 560, 5: 418, 6: 212 };
+let ITEMS = [];
 const approved = new Set();
 const skipped = new Set();
 
-const ITEMS = {
-  1: { service_code: 'EX001', service_name: 'Comprehensive Exam',          price_old: 89,    price_new: 105,    source: 'ai',         est_uplift: 3200 },
-  2: { service_code: 'DE204', service_name: 'Dental Cleaning (Grade 2)',    price_old: 285,   price_new: 299.99, source: 'ai',         est_uplift: 1540 },
-  3: { service_code: 'SU310', service_name: 'Feline Spay',                  price_old: 310,   price_new: 375,    source: 'consultant', est_uplift: 910  },
-  4: { service_code: 'VA102', service_name: 'Rabies Vaccine',               price_old: 38,    price_new: 44.99,  source: 'ai',         est_uplift: 560  },
-  5: { service_code: 'LA401', service_name: 'Blood Panel — Full Chemistry', price_old: 148,   price_new: 169.99, source: 'ai',         est_uplift: 418  },
-  6: { service_code: 'GR001', service_name: 'Nail Trim',                    price_old: 18,    price_new: 24.99,  source: 'consultant', est_uplift: 212  },
-};
+const sbFetch = (path) => fetch(SB_URL + path, {
+  headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+});
+
+function fmt$(n) {
+  return '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 function updateConfirmBar() {
   const count = approved.size;
-  const uplift = [...approved].reduce((s, i) => s + uplifts[i], 0);
+  const uplift = ITEMS.filter(i => approved.has(i.service_code)).reduce((s, i) => s + Number(i.est_uplift), 0);
   document.getElementById('approved-count').textContent = count;
   document.getElementById('approved-uplift').textContent = '$' + uplift.toLocaleString();
   document.getElementById('confirm-btn').disabled = count === 0;
+  const remaining = ITEMS.length - skipped.size;
   const badge = document.getElementById('pending-badge');
-  const remaining = 6 - skipped.size;
   badge.textContent = remaining;
   badge.style.display = remaining === 0 ? 'none' : '';
 }
 
-function toggleApprove(id) {
-  const btn = document.getElementById('approve-' + id);
-  const item = document.getElementById('item-' + id);
-  if (approved.has(id)) {
-    approved.delete(id);
+function toggleApprove(code) {
+  const btn = document.getElementById('approve-' + code);
+  const item = document.getElementById('item-' + code);
+  if (approved.has(code)) {
+    approved.delete(code);
     btn.textContent = '✓ Approve';
     btn.classList.remove('active');
     item.classList.remove('approved');
   } else {
-    approved.add(id);
-    skipped.delete(id);
+    approved.add(code);
+    skipped.delete(code);
     btn.textContent = '✓ Approved';
     btn.classList.add('active');
     item.classList.remove('skipped');
@@ -877,11 +707,11 @@ function toggleApprove(id) {
   updateConfirmBar();
 }
 
-function skipItem(id) {
-  const item = document.getElementById('item-' + id);
-  const btn = document.getElementById('approve-' + id);
-  approved.delete(id);
-  skipped.add(id);
+function skipItem(code) {
+  const item = document.getElementById('item-' + code);
+  const btn = document.getElementById('approve-' + code);
+  approved.delete(code);
+  skipped.add(code);
   btn.textContent = '✓ Approve';
   btn.classList.remove('active');
   item.classList.remove('approved');
@@ -890,17 +720,15 @@ function skipItem(id) {
 }
 
 function approveAll() {
-  for (let i = 1; i <= 6; i++) {
-    if (!skipped.has(i)) {
-      approved.add(i);
-      const btn = document.getElementById('approve-' + i);
-      const item = document.getElementById('item-' + i);
-      btn.textContent = '✓ Approved';
-      btn.classList.add('active');
-      item.classList.remove('skipped');
-      item.classList.add('approved');
+  ITEMS.forEach(i => {
+    if (!skipped.has(i.service_code)) {
+      approved.add(i.service_code);
+      const btn = document.getElementById('approve-' + i.service_code);
+      const el  = document.getElementById('item-' + i.service_code);
+      if (btn) { btn.textContent = '✓ Approved'; btn.classList.add('active'); }
+      if (el)  { el.classList.remove('skipped'); el.classList.add('approved'); }
     }
-  }
+  });
   updateConfirmBar();
 }
 
@@ -909,46 +737,122 @@ async function confirmApproval() {
   btn.disabled = true;
   btn.textContent = 'Saving...';
 
-  const rows = [...approved].map(i => ({
-    clinic_id:    CLINIC_ID,
-    review_id:    REVIEW_ID,
-    service_code: ITEMS[i].service_code,
-    service_name: ITEMS[i].service_name,
-    price_old:    ITEMS[i].price_old,
-    price_new:    ITEMS[i].price_new,
-    source:       ITEMS[i].source,
-    est_uplift:   ITEMS[i].est_uplift,
-    status:       'approved'
+  const rows = ITEMS.filter(i => approved.has(i.service_code)).map(i => ({
+    clinic_id: CLINIC_ID, review_id: REVIEW_ID,
+    service_code: i.service_code, service_name: i.service_name,
+    price_old: i.price_old, price_new: i.price_new,
+    source: i.source, est_uplift: i.est_uplift, status: 'approved'
   }));
 
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/price_approvals`, {
+    const res = await fetch(SB_URL + '/rest/v1/price_approvals', {
       method: 'POST',
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': `Bearer ${SB_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify(rows)
     });
     if (!res.ok) throw new Error(await res.text());
   } catch (e) {
     btn.disabled = false;
     btn.textContent = 'Confirm & Apply Changes';
-    alert('Error saving approvals: ' + e.message);
+    alert('Error: ' + e.message);
     return;
   }
 
   const count = approved.size;
-  const uplift = [...approved].reduce((s, i) => s + uplifts[i], 0);
+  const uplift = ITEMS.filter(i => approved.has(i.service_code)).reduce((s, i) => s + Number(i.est_uplift), 0);
   document.getElementById('modal-detail').innerHTML =
-    `<strong>${count} price changes</strong> saved to your account<br>` +
-    `Estimated annual uplift: <strong style="color:var(--green)">+$${uplift.toLocaleString()}</strong><br>` +
-    `<span style="font-size:0.78rem;color:var(--muted)">AVImark update scheduled for tonight</span>`;
+    '<strong>' + count + ' price changes</strong> saved to your account<br>' +
+    'Estimated annual uplift: <strong style="color:var(--green)">+$' + uplift.toLocaleString() + '</strong><br>' +
+    '<span style="font-size:0.78rem;color:var(--muted)">AVImark update scheduled for tonight</span>';
   document.getElementById('success-modal').classList.add('active');
   document.getElementById('pending-badge').style.display = 'none';
   btn.textContent = 'Confirmed ✓';
+}
+
+function renderItem(item) {
+  const code = item.service_code;
+  const chipClass = item.source === 'consultant' ? 'consultant' : 'ai';
+  const chipLabel = item.source === 'consultant' ? 'Consultant' : 'AI';
+  const delta = (Number(item.price_new) - Number(item.price_old)).toFixed(2);
+  const deltaStr = (delta > 0 ? '+' : '') + '$' + Math.abs(delta).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '<div class="approval-item" id="item-' + code + '">' +
+    '<span class="ai-chip ' + chipClass + '">' + chipLabel + '</span>' +
+    '<div class="item-info">' +
+      '<div class="item-name">' + item.service_name + '</div>' +
+      '<div class="item-code">Code: ' + code + '</div>' +
+    '</div>' +
+    '<div class="price-change">' +
+      '<span class="price-old">' + fmt$(item.price_old) + '</span>' +
+      '<span class="price-arrow">→</span>' +
+      '<span class="price-new">' + fmt$(item.price_new) + '</span>' +
+      '<span class="price-delta">' + deltaStr + '</span>' +
+    '</div>' +
+    '<div class="price-uplift">~$' + Number(item.est_uplift).toLocaleString() + ' / yr</div>' +
+    '<div class="item-actions">' +
+      '<button class="btn-approve" id="approve-' + code + '" onclick="toggleApprove(\'' + code + '\')">✓ Approve</button>' +
+      '<button class="btn-skip" onclick="skipItem(\'' + code + '\')">Skip</button>' +
+    '</div></div>';
+}
+
+function renderHistory(approvals) {
+  if (!approvals.length) return '<p style="color:var(--muted);padding:1rem;font-size:0.88rem;">No approved changes yet for this clinic.</p>';
+  const groups = {};
+  approvals.forEach(a => { if (!groups[a.review_id]) groups[a.review_id] = []; groups[a.review_id].push(a); });
+  return Object.entries(groups).map(([rid, items]) => {
+    const date = new Date(items[0].approved_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+    const uplift = items.reduce((s, i) => s + Number(i.est_uplift), 0);
+    const names = items.map(i => i.service_name).join(' · ');
+    return '<div class="timeline-item">' +
+      '<div class="timeline-dot green"></div>' +
+      '<div class="timeline-date">' + date + '</div>' +
+      '<div class="timeline-content">' +
+        '<div class="timeline-title">' + rid + ' — ' + items.length + ' item' + (items.length !== 1 ? 's' : '') + ' approved</div>' +
+        '<div class="timeline-detail">' + names + ' · $' + uplift.toLocaleString() + '/yr recovered</div>' +
+        '<span class="timeline-tag green">Applied</span>' +
+      '</div></div>';
+  }).join('');
+}
+
+async function init() {
+  const el = (id) => document.getElementById(id);
+
+  // ─── Recommendations (Approve tab) ───
+  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + REVIEW_ID + '&status=eq.pending&select=*');
+  ITEMS = recRes.ok ? await recRes.json() : [];
+
+  const list = el('approval-list');
+  list.innerHTML = ITEMS.length ? ITEMS.map(renderItem).join('') : '<p style="color:var(--muted);text-align:center;padding:2rem;">No pending items for this review.</p>';
+
+  const totalUplift = ITEMS.reduce((s, i) => s + Number(i.est_uplift), 0);
+  el('hero-count').textContent = ITEMS.length;
+  el('hero-uplift').textContent = '+$' + totalUplift.toLocaleString();
+  el('total-items').textContent = ITEMS.length;
+  el('btn-approve-all-count').textContent = ITEMS.length;
+  el('pending-badge').textContent = ITEMS.length;
+
+  // ─── Approvals (History + Dashboard) ───
+  const appRes = await sbFetch('/rest/v1/price_approvals?clinic_id=eq.' + CLINIC_ID + '&select=*&order=approved_at.desc');
+  const approvals = appRes.ok ? await appRes.json() : [];
+
+  const timeline = el('history-timeline');
+  if (timeline) timeline.innerHTML = renderHistory(approvals);
+
+  const recovered = approvals.reduce((s, a) => s + Number(a.est_uplift), 0);
+  if (el('kpi-recovered')) el('kpi-recovered').textContent = '$' + recovered.toLocaleString();
+  if (el('kpi-pending-uplift')) el('kpi-pending-uplift').textContent = '+$' + totalUplift.toLocaleString();
+  if (el('kpi-pending-count')) el('kpi-pending-count').textContent = '→ ' + ITEMS.length + ' item' + (ITEMS.length !== 1 ? 's' : '') + ' awaiting your sign-off';
+
+  // ─── Revenue (Dashboard) ───
+  const revRes = await sbFetch('/rest/v1/csi_pf_totals?select=ros&order=day.desc&limit=365');
+  if (revRes.ok) {
+    const rows = await revRes.json();
+    const annual = rows.reduce((s, r) => s + (Number(r.ros) || 0), 0);
+    if (el('kpi-annual-revenue')) {
+      el('kpi-annual-revenue').textContent = annual >= 1000000
+        ? '$' + (annual / 1000000).toFixed(2) + 'M'
+        : '$' + Math.round(annual / 1000) + 'K';
+    }
+  }
 }
 
 function showTab(name, btn) {
@@ -959,24 +863,24 @@ function showTab(name, btn) {
 }
 
 function submitSuggestion() {
-  const name = document.getElementById('sug-name').value.trim();
+  const name = el('sug-name').value.trim();
   if (!name) { alert('Please enter a service name.'); return; }
-  const list = document.getElementById('suggestion-list');
+  const list = el('suggestion-list');
   const card = document.createElement('div');
   card.className = 'suggestion-card';
   const today = new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-  const reason = document.getElementById('sug-reason').value.trim();
-  card.innerHTML = `
-    <div style="flex:1">
-      <div style="font-size:0.88rem;font-weight:700;color:var(--text)">${name}</div>
-      <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Submitted ${today}${reason ? ' · "' + reason + '"' : ''}</div>
-    </div>
-    <span class="suggestion-status pending">Submitted</span>`;
+  const reason = el('sug-reason').value.trim();
+  card.innerHTML = '<div style="flex:1"><div style="font-size:0.88rem;font-weight:700;color:var(--text)">' + name + '</div>' +
+    '<div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Submitted ' + today + (reason ? ' · "' + reason + '"' : '') + '</div></div>' +
+    '<span class="suggestion-status pending">Submitted</span>';
   list.prepend(card);
-  ['sug-name','sug-code','sug-current','sug-new','sug-reason'].forEach(id => document.getElementById(id).value = '');
+  ['sug-name','sug-code','sug-current','sug-new','sug-reason'].forEach(id => el(id).value = '');
 }
 
-// If opened from email link (has ?review= param), jump straight to Approve tab; otherwise show Dashboard
+// Helper needed before submitSuggestion may be called
+function el(id) { return document.getElementById(id); }
+
+// Tab routing
 if (new URLSearchParams(window.location.search).get('review')) {
   document.getElementById('tab-btn-approve').classList.add('active');
   document.getElementById('tab-dashboard').classList.remove('active');
@@ -985,6 +889,7 @@ if (new URLSearchParams(window.location.search).get('review')) {
   document.getElementById('tab-btn-dashboard').classList.add('active');
 }
 
+init();
 </script>
 </body>
 </html>
