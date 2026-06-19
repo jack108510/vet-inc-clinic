@@ -770,8 +770,9 @@ function renderFilteredList() {
     : '<p style="color:var(--muted);text-align:center;padding:2rem;font-size:0.85rem">No items in this category.</p>';
 }
 
-const sbFetch = (path) => fetch(SB_URL + path, {
-  headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+const sbFetch = (path, opts = {}) => fetch(SB_URL + path, {
+  ...opts,
+  headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal', ...(opts.headers || {}) }
 });
 
 function fmt$(n) {
@@ -997,6 +998,20 @@ async function openReport(reportId) {
   const report = ALL_REPORTS.find(r => r.id === reportId);
   if (!report) return;
 
+  // Show loading state in modal immediately, don't navigate to detail view
+  const modal = document.getElementById('rv-modal');
+  document.getElementById('rv-title').textContent = formatReportTitle(report) + ' Price Review';
+  document.getElementById('rv-sub').textContent = 'Loading…';
+  document.getElementById('rv-list').innerHTML = '<p style="text-align:center;padding:3rem;color:var(--muted);font-size:0.85rem">Loading services…</p>';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + reportId + '&status=eq.pending&select=*&order=est_uplift.desc');
+  const items  = recRes.ok ? await recRes.json() : [];
+  openReviewModal(items, report);
+  return;
+
+  // (legacy detail view — kept for reference, no longer shown on card click)
   document.getElementById('reports-list-view').style.display = 'none';
   const detail = document.getElementById('reports-detail-view');
   detail.style.display = '';
@@ -1043,13 +1058,8 @@ async function openReport(reportId) {
   approved.clear(); skipped.clear();
   updateConfirmBar();
 
-  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + reportId + '&status=eq.pending&select=*&order=est_uplift.desc');
-  ITEMS = recRes.ok ? await recRes.json() : [];
-
-  // Open the simplified review modal
-  showReportList(); // don't navigate into the old detail view
-  openReviewModal(ITEMS, report);
-  return;
+  const recRes2 = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + reportId + '&status=eq.pending&select=*&order=est_uplift.desc');
+  ITEMS = recRes2.ok ? await recRes2.json() : [];
 
   document.getElementById('btn-approve-all-count').textContent = ITEMS.length;
   document.getElementById('total-items').textContent = ITEMS.length;
