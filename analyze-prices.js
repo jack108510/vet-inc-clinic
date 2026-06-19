@@ -4,11 +4,19 @@
  *
  * Scans all service prices in AVImark data, flags stale/underpriced services,
  * and auto-populates price_recommendations for the owner review queue.
+ * Emails the clinic owner when the review is ready.
  *
  * Usage:
  *   node analyze-prices.js [clinic_id] [review_id]
  *   node analyze-prices.js rosslyn q3-2026
  */
+
+import { sendReviewEmail } from './send-email.js';
+
+// Clinic config — owner email per clinic_id
+const CLINIC_CONFIG = {
+  rosslyn: { name: 'Rosslyn Veterinary Clinic', ownerEmail: 'info@rosslynvet.com' }
+};
 
 const CLINIC_ID  = process.argv[2] || 'rosslyn';
 const REVIEW_ID  = process.argv[3] || (() => {
@@ -320,10 +328,30 @@ async function main() {
       process.stdout.write(`\r  Inserted ${inserted}/${rows.length} suggestions…`);
     }
   }
+  const portalUrl = `https://jack108510.github.io/vet-inc-clinic/owner.html?clinic=${CLINIC_ID}&review=${REVIEW_ID}`;
   console.log(`\n\n✅ Done.`);
   console.log(`   Report: ${REVIEW_ID} | Clinic: ${CLINIC_ID} | Score: ${healthScore}/100`);
   console.log(`   ${inserted} suggestions written | $${totalUplift.toLocaleString()}/yr opportunity`);
-  console.log(`   Portal: https://jack108510.github.io/vet-inc-clinic/owner.html?clinic=${CLINIC_ID}\n`);
+  console.log(`   Portal: ${portalUrl}\n`);
+
+  // Email owner — review is ready
+  const clinic = CLINIC_CONFIG[CLINIC_ID];
+  if (clinic?.ownerEmail && inserted > 0) {
+    console.log('Sending review email to owner…');
+    try {
+      const quarter = REVIEW_ID.startsWith('q') ? REVIEW_ID.toUpperCase().replace('-', ' ') : REVIEW_ID;
+      await sendReviewEmail({
+        to:               clinic.ownerEmail,
+        clinicName:       clinic.name,
+        reportTitle:      quarter,
+        flaggedCount:     inserted,
+        totalOpportunity: totalUplift,
+        portalUrl
+      });
+    } catch (err) {
+      console.warn('  Email failed:', err.message);
+    }
+  }
 }
 
 main().catch(err => { console.error('Fatal:', err); process.exit(1); });

@@ -1,0 +1,13 @@
+{
+  "name": "vetinc-dashboard",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "analyze": "node analyze-prices.js",
+    "track": "node track-outcomes.js"
+  },
+  "dependencies": {
+    "nodemailer": "^6.10.1"
+  }
+}

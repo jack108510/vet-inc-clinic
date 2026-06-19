@@ -21,6 +21,13 @@
  *   0 6 * * * cd /path/to/dashboard && node track-outcomes.js rosslyn
  */
 
+import { sendAlertEmail } from './send-email.js';
+
+// Clinic config — owner email per clinic_id
+const CLINIC_CONFIG = {
+  rosslyn: { name: 'Rosslyn Veterinary Clinic', ownerEmail: 'info@rosslynvet.com' }
+};
+
 const CLINIC_ID      = process.argv[2] || 'rosslyn';
 const BASELINE_DAYS  = 30;   // window before price change (pre-change baseline)
 const CURRENT_DAYS   = 30;   // most recent window to compare against
@@ -263,7 +270,13 @@ async function main() {
     console.log(`\n  ${written} records updated`);
   }
 
-  const flagged = upserts.filter(u => u.status === 'flagged');
+  const flagged    = upserts.filter(u => u.status === 'flagged');
+  const newlyFlagged = upserts.filter(u => u.status === 'flagged' && (
+    !existingOutcomes[u.service_code + '::' + u.review_id] ||
+    existingOutcomes[u.service_code + '::' + u.review_id].status !== 'flagged'
+  ));
+
+  const portalUrl = `https://jack108510.github.io/vet-inc-clinic/owner.html?clinic=${CLINIC_ID}`;
   console.log(`\n✅ Done. ${newFlags} new flags | ${cleared} cleared | ${skipped} skipped`);
 
   if (flagged.length) {
@@ -271,9 +284,27 @@ async function main() {
     flagged.forEach(o =>
       console.log(`   ${o.service_code}  "${o.service_name}"  visits ${pct(o.visit_delta_pct / 100)}  revenue ${pct(o.revenue_delta_pct / 100)}`)
     );
-    console.log(`\n   Portal: https://jack108510.github.io/vet-inc-clinic/owner.html?clinic=${CLINIC_ID}`);
+    console.log(`\n   Portal: ${portalUrl}`);
   } else {
     console.log('   All monitored services performing at or above baseline.');
+  }
+
+  // Email owner only for newly flagged services (not ones already flagged yesterday)
+  if (newlyFlagged.length > 0) {
+    const clinic = CLINIC_CONFIG[CLINIC_ID];
+    if (clinic?.ownerEmail) {
+      console.log(`\nSending alert email to owner (${newlyFlagged.length} newly flagged)…`);
+      try {
+        await sendAlertEmail({
+          to:           clinic.ownerEmail,
+          clinicName:   clinic.name,
+          flaggedItems: newlyFlagged,
+          portalUrl
+        });
+      } catch (err) {
+        console.warn('  Email failed:', err.message);
+      }
+    }
   }
   console.log();
 }
