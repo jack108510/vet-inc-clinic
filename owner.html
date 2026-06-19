@@ -619,6 +619,15 @@ body {
     <div id="revenue-chart-wrap" style="width:100%;min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.85rem">Loading chart…</div>
   </div>
 
+  <!-- Performance alert (shown if any confirmed price change is underperforming) -->
+  <div id="flag-alert" style="display:none;background:#fff5f5;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:12px;padding:1rem 1.25rem;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
+    <div>
+      <div style="font-size:0.9rem;font-weight:700;color:#dc2626" id="flag-alert-title">Price changes underperforming</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:2px" id="flag-alert-sub">Revenue or visit volume dropped since the last increase — review and adjust now</div>
+    </div>
+    <button onclick="openFlagReview()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap">Review Now →</button>
+  </div>
+
   <!-- Pending action callout (shown if items pending) -->
   <div id="pending-callout" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid var(--primary);border-radius:12px;padding:1rem 1.25rem;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.5rem">
     <div>
@@ -714,6 +723,27 @@ body {
 
   </div>
 </section>
+
+<!-- FLAG REVIEW MODAL -->
+<div id="flag-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:2rem 1rem 6rem">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:900px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div style="background:linear-gradient(135deg,#b91c1c,#dc2626,#ef4444);color:#fff;padding:1.25rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+      <div>
+        <div style="font-size:1rem;font-weight:800;margin-bottom:2px">Performance Alert</div>
+        <div id="flag-modal-sub" style="font-size:0.78rem;opacity:0.85">services need your attention</div>
+      </div>
+      <button onclick="closeFlagModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">&times;</button>
+    </div>
+    <div style="padding:1rem 1.5rem;background:#fef2f2;border-bottom:1px solid #fecaca;font-size:0.83rem;color:#7f1d1d;line-height:1.5">
+      Revenue or visit volume has dropped since these prices were raised. For each service, you can <strong>adjust the price</strong> (lower it to find the right level) or <strong>keep & monitor</strong> (dismiss for 30 days).
+    </div>
+    <div id="flag-items-wrap" style="padding:0 1.5rem 1rem"></div>
+    <div style="padding:1rem 1.5rem;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:flex-end;gap:0.75rem;background:#f8fafc">
+      <button onclick="closeFlagModal()" style="background:none;border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:0.85rem;cursor:pointer;color:#64748b;font-family:inherit">Cancel</button>
+      <button id="flag-submit-btn" onclick="submitFlagReview()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">Submit Changes</button>
+    </div>
+  </div>
+</div>
 
 <!-- APPROVAL SUCCESS MODAL -->
 <div class="modal-overlay" id="success-modal">
@@ -1139,6 +1169,18 @@ function renderDistribution(items) {
 async function init() {
   const el = (id) => document.getElementById(id);
 
+  // ─── Performance flags — load active flags and show dashboard alert ───
+  const flagRes = await sbFetch('/rest/v1/price_outcomes?clinic_id=eq.' + CLINIC_ID + '&status=eq.flagged&select=*&order=revenue_delta_pct.asc');
+  FLAG_ITEMS = flagRes.ok ? await flagRes.json() : [];
+  if (FLAG_ITEMS.length) {
+    const fa = el('flag-alert');
+    if (fa) {
+      fa.style.display = 'flex';
+      el('flag-alert-title').textContent = FLAG_ITEMS.length + ' price change' + (FLAG_ITEMS.length > 1 ? 's' : '') + ' underperforming';
+      el('flag-alert-sub').textContent = FLAG_ITEMS.map(o => o.service_name || o.service_code).slice(0, 3).join(', ') + (FLAG_ITEMS.length > 3 ? ' +' + (FLAG_ITEMS.length - 3) + ' more' : '') + ' — revenue or visits dropped since last increase';
+    }
+  }
+
   // ─── Reports tab — load all reports, render list, auto-open latest ───
   const rptRes = await sbFetch('/rest/v1/clinic_reports?clinic_id=eq.' + CLINIC_ID + '&order=created_at.desc&select=*');
   ALL_REPORTS = rptRes.ok ? await rptRes.json() : [];
@@ -1463,6 +1505,154 @@ async function submitPriceChange() {
     '<div style="font-size:0.9rem;font-weight:700;color:var(--success)">' + fmt$(row.price_old) + ' → ' + fmt$(row.price_new) + '</div>' +
     '</div>' + el('svc-history').innerHTML;
   setTimeout(() => { btn.textContent = 'Apply Price Change'; el('change-new').value = ''; el('change-reason').value = ''; el('impact-preview').style.display = 'none'; btn.disabled = true; }, 2500);
+}
+
+// ─── FLAG REVIEW ─────────────────────────────────────────────────
+let FLAG_ITEMS = [];
+const flagDecisions = {}; // service_code → { action: 'adjust'|'monitor', price: number }
+
+function openFlagReview() {
+  if (!FLAG_ITEMS.length) return;
+  document.getElementById('flag-modal-sub').textContent =
+    FLAG_ITEMS.length + ' service' + (FLAG_ITEMS.length !== 1 ? 's' : '') + ' need' + (FLAG_ITEMS.length === 1 ? 's' : '') + ' your attention';
+  // Init decisions
+  FLAG_ITEMS.forEach(o => {
+    flagDecisions[o.service_code] = { action: null, price: Number(o.price_new) };
+  });
+  renderFlagItems();
+  document.getElementById('flag-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFlagModal() {
+  document.getElementById('flag-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function renderFlagItems() {
+  document.getElementById('flag-items-wrap').innerHTML = FLAG_ITEMS.map(o => {
+    const vd = o.visit_delta_pct;
+    const rd = o.revenue_delta_pct;
+    const gap = o.charge_gap_pct;
+    const d = flagDecisions[o.service_code];
+    const chargeNote = gap < -5
+      ? `<div style="margin-top:4px;font-size:0.72rem;color:#b91c1c">Avg charge ($${(o.current_avg_charge||0).toFixed(2)}) is below confirmed price ($${(o.price_new||0).toFixed(2)}) — may not have been entered in AVImark</div>`
+      : '';
+    return `
+    <div style="border:1px solid #fecaca;border-radius:12px;padding:1.1rem 1.25rem;margin-top:1rem;background:#fff" id="flag-item-${o.service_code}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:0.85rem">
+        <div>
+          <div style="font-size:0.95rem;font-weight:700;color:#0f172a">${o.service_name || o.service_code}</div>
+          <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">${o.service_code} · price raised from $${(o.price_old||0).toFixed(2)} → $${(o.price_new||0).toFixed(2)}</div>
+          ${chargeNote}
+        </div>
+        <div style="display:flex;gap:1.5rem;text-align:center;flex-shrink:0">
+          <div>
+            <div style="font-size:1.1rem;font-weight:800;color:${vd < -15 ? '#dc2626' : '#64748b'}">${vd >= 0 ? '+' : ''}${vd.toFixed(1)}%</div>
+            <div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em">Visits</div>
+            <div style="font-size:0.72rem;color:#64748b">${o.baseline_visits||0}/yr → ${o.current_visits||0}/yr</div>
+          </div>
+          <div>
+            <div style="font-size:1.1rem;font-weight:800;color:${rd < -5 ? '#dc2626' : '#64748b'}">${rd >= 0 ? '+' : ''}${rd.toFixed(1)}%</div>
+            <div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em">Revenue</div>
+            <div style="font-size:0.72rem;color:#64748b">$${Math.round((o.baseline_revenue||0)/1000)}K → $${Math.round((o.current_revenue||0)/1000)}K/yr</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+        <button onclick="flagChoose('${o.service_code}','adjust')" id="flg-adj-${o.service_code}"
+          style="padding:7px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid #dc2626;background:none;color:#dc2626;transition:all .12s">
+          Adjust price
+        </button>
+        <div id="flg-inp-${o.service_code}" style="display:none;align-items:center;gap:0.5rem">
+          <span style="font-size:0.78rem;color:#64748b">New price:</span>
+          <input type="number" step="0.50" min="0" value="${(o.price_old||0).toFixed(2)}"
+            onchange="flagDecisions['${o.service_code}'].price=parseFloat(this.value)||0"
+            style="width:90px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.85rem;font-family:inherit;text-align:right">
+          <span style="font-size:0.72rem;color:#94a3b8">(was $${(o.price_old||0).toFixed(2)})</span>
+        </div>
+        <button onclick="flagChoose('${o.service_code}','monitor')" id="flg-mon-${o.service_code}"
+          style="padding:7px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid #e2e8f0;background:none;color:#64748b;transition:all .12s">
+          Keep & monitor
+        </button>
+        <span id="flg-chosen-${o.service_code}" style="font-size:0.78rem;color:#16a34a;font-weight:600;display:none"></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function flagChoose(code, action) {
+  flagDecisions[code].action = action;
+  const adjBtn = document.getElementById('flg-adj-' + code);
+  const monBtn = document.getElementById('flg-mon-' + code);
+  const inp    = document.getElementById('flg-inp-'  + code);
+  const chosen = document.getElementById('flg-chosen-' + code);
+  if (action === 'adjust') {
+    adjBtn.style.background = '#fef2f2'; adjBtn.style.borderColor = '#dc2626';
+    monBtn.style.background = ''; monBtn.style.borderColor = '#e2e8f0';
+    inp.style.display = 'flex';
+    chosen.style.display = 'none';
+  } else {
+    adjBtn.style.background = ''; adjBtn.style.borderColor = '#dc2626';
+    monBtn.style.background = '#f0fdf4'; monBtn.style.borderColor = '#16a34a'; monBtn.style.color = '#16a34a';
+    inp.style.display = 'none';
+    chosen.textContent = 'Will check again in 30 days';
+    chosen.style.display = '';
+  }
+}
+
+async function submitFlagReview() {
+  const btn = document.getElementById('flag-submit-btn');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+
+  const adjustments = Object.entries(flagDecisions).filter(([, d]) => d.action === 'adjust');
+  const monitors    = Object.entries(flagDecisions).filter(([, d]) => d.action === 'monitor');
+
+  // Write adjusted prices as new approvals
+  if (adjustments.length) {
+    const rows = adjustments.map(([code, d]) => {
+      const o = FLAG_ITEMS.find(f => f.service_code === code);
+      return {
+        clinic_id:    CLINIC_ID,
+        review_id:    'adjustment-' + new Date().toISOString().slice(0, 7),
+        service_code: code,
+        service_name: o?.service_name || code,
+        price_old:    Number(o?.price_new || 0),
+        price_new:    parseFloat(d.price.toFixed(2)),
+        source:       'owner-adjustment',
+        annual_volume: o?.current_visits || 0,
+        est_uplift:   Math.round(((d.price - Number(o?.price_new || 0)) * (o?.current_visits || 0))),
+        status:       'approved',
+        approved_at:  new Date().toISOString()
+      };
+    });
+    await fetch(SB_URL + '/rest/v1/price_approvals', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(rows)
+    });
+  }
+
+  // Mark dismissed services as "monitoring"
+  if (monitors.length) {
+    for (const [code] of monitors) {
+      const o = FLAG_ITEMS.find(f => f.service_code === code);
+      if (!o) continue;
+      await sbFetch(
+        `/rest/v1/price_outcomes?clinic_id=eq.${CLINIC_ID}&service_code=eq.${encodeURIComponent(code)}&review_id=eq.${encodeURIComponent(o.review_id)}`,
+        { method: 'PATCH', body: JSON.stringify({ status: 'monitoring', dismissed_at: new Date().toISOString() }) }
+      );
+    }
+  }
+
+  closeFlagModal();
+  btn.textContent = 'Submit Changes'; btn.disabled = false;
+
+  // Remove resolved items from FLAG_ITEMS and update alert
+  const resolvedCodes = new Set([...adjustments, ...monitors].map(([c]) => c));
+  FLAG_ITEMS = FLAG_ITEMS.filter(o => !resolvedCodes.has(o.service_code));
+  if (!FLAG_ITEMS.length) document.getElementById('flag-alert').style.display = 'none';
+  else document.getElementById('flag-alert-title').textContent = FLAG_ITEMS.length + ' service' + (FLAG_ITEMS.length > 1 ? 's' : '') + ' still underperforming';
 }
 
 // Helper
