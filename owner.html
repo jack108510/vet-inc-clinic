@@ -576,10 +576,6 @@ body {
 
   <!-- Health banner -->
   <div class="health-banner" id="health-banner">
-    <div class="health-score-circle">
-      <div class="health-score-val" id="health-score-val">…</div>
-      <div class="health-score-label">Score</div>
-    </div>
     <div class="health-text">
       <h3 id="health-title">Pricing Health</h3>
       <p id="health-desc">Loading…</p>
@@ -945,14 +941,7 @@ function renderReports(reports) {
   if (!reports.length) return '<p style="color:var(--muted);text-align:center;padding:3rem;font-size:0.9rem;">No reports yet. Run the pricing analysis to generate your first report.</p>';
   return reports.map((r, i) => {
     const isLatest   = i === 0;
-    const scoreColor = r.health_score >= 80 ? 'var(--success)' : r.health_score >= 60 ? 'var(--primary)' : 'var(--warning,#d97706)';
     const typeLabel  = r.type === 'onboarding' ? 'Onboarding' : r.type === 'quarterly' ? 'Quarterly' : 'Ad Hoc';
-    const prevReport = reports[i + 1];
-    const delta      = prevReport && prevReport.health_score != null && r.health_score != null
-      ? r.health_score - prevReport.health_score : null;
-    const deltaStr   = delta === null ? '' : delta >= 0
-      ? `<span style="color:var(--success);font-size:0.75rem;font-weight:700">▲ ${delta} from last</span>`
-      : `<span style="color:#d97706;font-size:0.75rem;font-weight:700">▼ ${Math.abs(delta)} from last</span>`;
     return `
     <div class="card" style="margin-bottom:0.85rem;cursor:pointer;border-left:3px solid ${isLatest ? 'var(--primary)' : 'var(--border)'};transition:box-shadow 0.15s" onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)'" onmouseleave="this.style.boxShadow=''" onclick="openReport('${r.id}')">
       <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
@@ -965,11 +954,6 @@ function renderReports(reports) {
           <div style="font-size:0.78rem;color:var(--muted)">${formatReportDate(r.report_date)} · ${Number(r.total_services || 0).toLocaleString()} services · CPI ${r.cpi_rate ? (r.cpi_rate * 100).toFixed(1) + '%' : '—'}</div>
         </div>
         <div style="display:flex;gap:1.75rem;align-items:center;flex-wrap:wrap">
-          <div style="text-align:center">
-            <div style="font-size:1.5rem;font-weight:900;color:${scoreColor};line-height:1">${r.health_score ?? '—'}</div>
-            <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;margin-top:2px">Score</div>
-            ${deltaStr}
-          </div>
           <div style="text-align:center">
             <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${r.flagged_services ?? '—'}</div>
             <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase">Flagged</div>
