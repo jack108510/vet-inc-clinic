@@ -1046,6 +1046,11 @@ async function openReport(reportId) {
   const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + reportId + '&status=eq.pending&select=*&order=est_uplift.desc');
   ITEMS = recRes.ok ? await recRes.json() : [];
 
+  // Open the simplified review modal
+  showReportList(); // don't navigate into the old detail view
+  openReviewModal(ITEMS, report);
+  return;
+
   document.getElementById('btn-approve-all-count').textContent = ITEMS.length;
   document.getElementById('total-items').textContent = ITEMS.length;
 
@@ -1468,6 +1473,239 @@ function el(id) { return document.getElementById(id); }
 document.getElementById('tab-btn-dashboard').classList.add('active');
 
 init();
+
+// ── PRICE REVIEW MODAL ────────────────────────────────────────────────
+let reviewItems = [];
+const reviewState = {};
+
+function openReviewModal(items, report) {
+  reviewItems = items;
+  Object.keys(reviewState).forEach(k => delete reviewState[k]);
+  items.forEach(i => {
+    reviewState[i.service_code] = { price: Number(i.price_new).toFixed(2), left: false };
+  });
+
+  const modal = document.getElementById('rv-modal');
+  document.getElementById('rv-title').textContent = formatReportTitle(report) + ' Price Review';
+  document.getElementById('rv-sub').textContent =
+    'Rosslyn Veterinary Clinic · ' + items.length + ' services flagged for update';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderReviewList('');
+}
+
+function closeReviewModal() {
+  document.getElementById('rv-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function renderReviewList(q) {
+  const lq = q.toLowerCase();
+  const mode = document.getElementById('rv-fmode').dataset.mode || 'all';
+  let items = reviewItems.filter(i =>
+    !lq || (i.service_name||'').toLowerCase().includes(lq) || (i.service_code||'').toLowerCase().includes(lq)
+  );
+  if (mode === 'edited')  items = items.filter(i => reviewState[i.service_code]?.price !== Number(i.price_new).toFixed(2) && !reviewState[i.service_code]?.left);
+  if (mode === 'left')    items = items.filter(i => reviewState[i.service_code]?.left);
+
+  document.getElementById('rv-list').innerHTML = items.map(item => {
+    const code  = item.service_code;
+    const s     = reviewState[code];
+    const cur   = Number(item.price_old);
+    const sugg  = Number(item.price_new);
+    const vol   = Number(item.annual_volume) || 0;
+    const newP  = parseFloat(s.price) || sugg;
+    const pct   = cur > 0 ? ((newP - cur) / cur * 100).toFixed(1) : '—';
+    const upl   = Math.round((newP - cur) * vol);
+    const edited = s.price !== sugg.toFixed(2);
+    const shp   = isShoppable(item);
+    return `<div class="rv-row${s.left?' rv-left':''}" id="rvrow-${code}">
+      <div>
+        <div class="rv-name">${item.service_name || code}${shp ? '<span class="rv-shp">price-sensitive</span>' : ''}</div>
+        <div class="rv-code">${code}</div>
+      </div>
+      <div class="rv-cell" style="text-align:right">${vol ? vol.toLocaleString() : '—'}</div>
+      <div class="rv-cell">$${cur.toFixed(2)}</div>
+      <div>
+        <input class="rv-inp${edited && !s.left ? ' rv-edited' : ''}" type="number" step="0.01" min="0"
+          value="${s.price}" data-code="${code}" data-sugg="${sugg.toFixed(2)}" data-cur="${cur}" data-vol="${vol}"
+          ${s.left ? 'disabled' : ''}
+          oninput="onRvEdit(this)">
+      </div>
+      <div class="rv-cell" id="rv-pct-${code}" style="text-align:right;color:${s.left?'var(--muted)':'var(--success)'}">${s.left ? '—' : (pct !== '—' ? '+' + pct + '%' : '—')}</div>
+      <div class="rv-cell" id="rv-upl-${code}" style="text-align:right;font-weight:600;color:${s.left?'var(--muted)':'var(--success)'}">${s.left ? '—' : '$' + upl.toLocaleString()}</div>
+      <div><button class="rv-skip-btn${s.left?' rv-skip-on':''}" onclick="rvToggleLeft('${code}')">${s.left ? 'Undo' : 'Leave as is'}</button></div>
+    </div>`;
+  }).join('') || '<p style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">No items match.</p>';
+
+  rvUpdateBar();
+}
+
+function onRvEdit(el) {
+  const code = el.dataset.code, val = el.value;
+  reviewState[code].price = val;
+  el.classList.toggle('rv-edited', val !== el.dataset.sugg);
+  const cur  = parseFloat(el.dataset.cur), vol = parseInt(el.dataset.vol);
+  const newP = parseFloat(val) || 0;
+  const pct  = cur > 0 ? ((newP - cur) / cur * 100).toFixed(1) : '—';
+  const upl  = Math.round((newP - cur) * vol);
+  const pe = document.getElementById('rv-pct-' + code);
+  const ue = document.getElementById('rv-upl-' + code);
+  if (pe) { pe.textContent = pct !== '—' ? '+' + pct + '%' : '—'; pe.style.color = 'var(--success)'; }
+  if (ue) { ue.textContent = '$' + upl.toLocaleString(); ue.style.color = 'var(--success)'; }
+  rvUpdateBar();
+}
+
+function rvToggleLeft(code) {
+  reviewState[code].left = !reviewState[code].left;
+  renderReviewList(document.getElementById('rv-q').value);
+}
+
+function rvSetFilter(mode) {
+  const btn = document.getElementById('rv-fmode');
+  btn.dataset.mode = mode;
+  document.querySelectorAll('.rv-fb').forEach(b => b.classList.remove('rv-fb-on'));
+  document.getElementById('rv-f-' + mode).classList.add('rv-fb-on');
+  renderReviewList(document.getElementById('rv-q').value);
+}
+
+function rvUpdateBar() {
+  const active = reviewItems.filter(i => !reviewState[i.service_code]?.left);
+  const n = active.length;
+  const totUpl = active.reduce((sum, i) => {
+    const cur = Number(i.price_old), newP = parseFloat(reviewState[i.service_code]?.price) || Number(i.price_new);
+    return sum + Math.round((newP - cur) * (Number(i.annual_volume) || 0));
+  }, 0);
+  document.getElementById('rv-bar-n').textContent = n;
+  document.getElementById('rv-bar-upl').textContent = '+$' + totUpl.toLocaleString() + '/yr';
+  document.getElementById('rv-confirm').disabled = n === 0;
+}
+
+async function confirmReview() {
+  const btn = document.getElementById('rv-confirm');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  const active = reviewItems.filter(i => !reviewState[i.service_code]?.left);
+  const rows = active.map(i => ({
+    clinic_id:    CLINIC_ID,
+    review_id:    i.review_id,
+    service_code: i.service_code,
+    service_name: i.service_name,
+    price_old:    i.price_old,
+    price_new:    parseFloat(reviewState[i.service_code]?.price) || i.price_new,
+    est_uplift:   Math.round((parseFloat(reviewState[i.service_code]?.price || i.price_new) - Number(i.price_old)) * (Number(i.annual_volume) || 0)),
+    status:       'approved',
+    approved_at:  new Date().toISOString(),
+  }));
+  if (rows.length) await sbFetch('/rest/v1/price_approvals', { method:'POST', body: JSON.stringify(rows) });
+  // Mark recommendations as approved
+  const codes = active.map(i => i.service_code);
+  if (codes.length) await sbFetch('/rest/v1/price_recommendations?service_code=in.(' + codes.join(',') + ')&review_id=eq.' + active[0]?.review_id + '&clinic_id=eq.' + CLINIC_ID, { method:'PATCH', body: JSON.stringify({ status:'approved' }) });
+  btn.textContent = 'Done!';
+  setTimeout(() => closeReviewModal(), 1200);
+}
+</script>
+
+<!-- ── PRICE REVIEW MODAL ── -->
+<div id="rv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:900;align-items:flex-start;justify-content:center;overflow-y:auto;padding:1.5rem 1rem 6rem">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:1080px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+
+    <!-- Modal header -->
+    <div style="background:linear-gradient(135deg,#1d4ed8,#2563eb,#3b82f6);color:#fff;padding:1.25rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+      <div>
+        <div id="rv-title" style="font-size:1.1rem;font-weight:800;margin-bottom:2px"></div>
+        <div id="rv-sub" style="font-size:0.78rem;opacity:0.8"></div>
+      </div>
+      <button onclick="closeReviewModal()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&times;</button>
+    </div>
+
+    <!-- Toolbar -->
+    <div style="padding:1rem 1.5rem 0.5rem;display:flex;align-items:center;gap:0.55rem;flex-wrap:wrap;border-bottom:1px solid #e2e8f0">
+      <div style="position:relative;flex:1;min-width:180px">
+        <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="rv-q" type="text" placeholder="Search services…" oninput="renderReviewList(this.value)"
+          style="width:100%;padding:7px 12px 7px 30px;border:1px solid #e2e8f0;border-radius:7px;font-size:0.83rem;font-family:inherit;color:#0f172a">
+      </div>
+      <span id="rv-fmode" data-mode="all" style="display:none"></span>
+      <button class="rv-fb rv-fb-on" id="rv-f-all" onclick="rvSetFilter('all')">All</button>
+      <button class="rv-fb" id="rv-f-edited" onclick="rvSetFilter('edited')">Edited</button>
+      <button class="rv-fb" id="rv-f-left" onclick="rvSetFilter('left')">Left as is</button>
+    </div>
+
+    <!-- Table header -->
+    <div class="rv-hd">
+      <span>Service</span>
+      <span style="text-align:right">Visits/yr</span>
+      <span>Current price</span>
+      <span>Suggested price</span>
+      <span style="text-align:right">Increase</span>
+      <span style="text-align:right">Est. uplift/yr</span>
+      <span></span>
+    </div>
+
+    <!-- List -->
+    <div id="rv-list"></div>
+  </div>
+</div>
+
+<!-- Sticky bottom bar for review modal -->
+<div id="rv-bottombar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;padding:0.9rem 2rem;z-index:950;box-shadow:0 -2px 12px rgba(0,0,0,.08);align-items:center;justify-content:space-between;gap:1rem">
+  <div style="font-size:0.83rem;color:#64748b"><strong id="rv-bar-n" style="color:#0f172a">—</strong> services to update &nbsp;·&nbsp; <strong id="rv-bar-upl" style="color:#16a34a">—</strong></div>
+  <div style="display:flex;gap:0.55rem">
+    <button onclick="closeReviewModal()" style="background:none;border:1px solid #e2e8f0;border-radius:7px;padding:8px 16px;font-size:0.82rem;cursor:pointer;color:#64748b;font-family:inherit">Cancel</button>
+    <button id="rv-confirm" onclick="confirmReview()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:0.86rem;font-weight:600;cursor:pointer" disabled>Confirm changes</button>
+  </div>
+</div>
+
+<style>
+.rv-hd {
+  display:grid; grid-template-columns:1.6fr 80px 120px 130px 72px 120px 110px;
+  padding:0 1.5rem 0.5rem; gap:0; align-items:end;
+  font-size:0.62rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.08em;
+  border-bottom:1px solid #e2e8f0; background:#f8fafc;
+}
+.rv-hd span { padding:0.6rem 0 0; }
+.rv-row {
+  display:grid; grid-template-columns:1.6fr 80px 120px 130px 72px 120px 110px;
+  padding:0.7rem 1.5rem; align-items:center; gap:0;
+  border-bottom:1px solid #f1f5f9; background:#fff; transition:background .1s;
+}
+.rv-row:hover { background:#fafcff; }
+.rv-row.rv-left { opacity:0.38; }
+.rv-row.rv-left .rv-name { text-decoration:line-through; color:#64748b; }
+.rv-name { font-size:0.85rem; font-weight:600; color:#0f172a; }
+.rv-code { font-size:0.67rem; color:#94a3b8; margin-top:1px; }
+.rv-shp { font-size:0.59rem; font-weight:600; padding:1px 5px; border-radius:3px; background:#fef9c3; color:#713f12; border:1px solid #fde68a; margin-left:5px; }
+.rv-cell { font-size:0.82rem; color:#64748b; }
+.rv-inp {
+  width:100px; padding:5px 8px; text-align:right; display:block; margin-left:auto;
+  border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem; font-weight:600;
+  color:#0f172a; font-family:inherit; transition:border .12s, background .12s;
+}
+.rv-inp:focus { outline:none; border-color:#2563eb; background:#eff6ff; }
+.rv-inp.rv-edited { border-color:#2563eb; background:#eff6ff; color:#2563eb; }
+.rv-inp:disabled { background:transparent; border-color:transparent; color:#94a3b8; cursor:default; }
+.rv-skip-btn {
+  display:block; margin-left:auto; padding:4px 10px; white-space:nowrap;
+  border:1px solid #e2e8f0; border-radius:6px; background:none; font-size:0.72rem;
+  font-weight:500; color:#64748b; cursor:pointer; font-family:inherit; transition:all .12s;
+}
+.rv-skip-btn:hover { border-color:#94a3b8; color:#0f172a; }
+.rv-skip-btn.rv-skip-on { border-color:#94a3b8; background:#f1f5f9; color:#0f172a; font-weight:600; }
+.rv-fb {
+  padding:5px 13px; border-radius:20px; font-size:0.74rem; font-weight:500; cursor:pointer;
+  border:1px solid #e2e8f0; background:#f1f5f9; color:#64748b; transition:all .12s; font-family:inherit;
+}
+.rv-fb:hover { border-color:#94a3b8; color:#0f172a; }
+.rv-fb.rv-fb-on { background:#2563eb; border-color:#2563eb; color:#fff; font-weight:600; }
+</style>
+
+<script>
+// Show/hide the bottom bar when modal is open
+const _rvObs = new MutationObserver(() => {
+  const open = document.getElementById('rv-modal').style.display !== 'none';
+  document.getElementById('rv-bottombar').style.display = open ? 'flex' : 'none';
+});
+_rvObs.observe(document.getElementById('rv-modal'), { attributes:true, attributeFilter:['style'] });
 </script>
 </body>
 </html>
