@@ -1668,30 +1668,30 @@ async function confirmReview() {
 
 <style>
 .rv-hd {
-  display:grid; grid-template-columns:1.6fr 80px 120px 130px 72px 120px 110px;
-  padding:0 1.5rem 0.5rem; gap:0; align-items:end;
+  display:grid; grid-template-columns:2fr 90px 110px 120px 75px 115px 115px;
+  padding:0 1.5rem 0.5rem; gap:1rem; align-items:end;
   font-size:0.62rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.08em;
   border-bottom:1px solid #e2e8f0; background:#f8fafc;
 }
 .rv-hd span { padding:0.6rem 0 0; }
 .rv-row {
-  display:grid; grid-template-columns:1.6fr 80px 120px 130px 72px 120px 110px;
-  padding:0.7rem 1.5rem; align-items:center; gap:0;
+  display:grid; grid-template-columns:2fr 90px 110px 120px 75px 115px 115px;
+  padding:0.7rem 1.5rem; align-items:center; gap:1rem;
   border-bottom:1px solid #f1f5f9; background:#fff; transition:background .1s;
 }
 .rv-row:hover { background:#fafcff; }
 .rv-row.rv-left { opacity:0.38; }
 .rv-row.rv-left .rv-name { text-decoration:line-through; color:#64748b; }
-.rv-name { font-size:0.85rem; font-weight:600; color:#0f172a; }
+.rv-name { font-size:0.85rem; font-weight:600; color:#0f172a; line-height:1.3; }
 .rv-code { font-size:0.67rem; color:#94a3b8; margin-top:1px; }
-.rv-shp { font-size:0.59rem; font-weight:600; padding:1px 5px; border-radius:3px; background:#fef9c3; color:#713f12; border:1px solid #fde68a; margin-left:5px; }
+.rv-shp { display:inline-block; font-size:0.58rem; font-weight:600; padding:1px 5px; border-radius:3px; background:#fef9c3; color:#713f12; border:1px solid #fde68a; margin-left:5px; vertical-align:middle; white-space:nowrap; }
 .rv-cell { font-size:0.82rem; color:#64748b; }
 .rv-inp {
-  width:100px; padding:5px 8px; text-align:right; display:block; margin-left:auto;
+  width:108px; padding:5px 9px; text-align:right; display:block; margin-left:auto;
   border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem; font-weight:600;
-  color:#0f172a; font-family:inherit; transition:border .12s, background .12s;
+  color:#0f172a; font-family:inherit; background:#fff; transition:border .12s, background .12s;
 }
-.rv-inp:focus { outline:none; border-color:#2563eb; background:#eff6ff; }
+.rv-inp:focus { outline:none; border-color:#2563eb; }
 .rv-inp.rv-edited { border-color:#2563eb; background:#eff6ff; color:#2563eb; }
 .rv-inp:disabled { background:transparent; border-color:transparent; color:#94a3b8; cursor:default; }
 .rv-skip-btn {
