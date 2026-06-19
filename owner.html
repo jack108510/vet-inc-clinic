@@ -847,7 +847,8 @@ async function confirmApproval() {
     service_code: i.service_code, service_name: i.service_name,
     price_old: i.price_old, price_new: i.price_new,
     source: i.source, annual_volume: i.annual_volume,
-    est_uplift: realUplift(i), status: 'approved'
+    est_uplift: realUplift(i), status: 'approved',
+    approved_at: new Date().toISOString()
   }));
 
   try {
@@ -990,9 +991,13 @@ async function openReport(reportId) {
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
-  const recRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + reportId + '&status=eq.pending&select=*&order=est_uplift.desc');
-  const items  = recRes.ok ? await recRes.json() : [];
-  openReviewModal(items, report);
+  const [recRes, outcomeRes] = await Promise.all([
+    sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + reportId + '&status=eq.pending&select=*&order=est_uplift.desc'),
+    sbFetch('/rest/v1/price_outcomes?clinic_id=eq.' + CLINIC_ID + '&select=*&order=revenue_delta_pct.asc')
+  ]);
+  const items    = recRes.ok    ? await recRes.json()    : [];
+  const outcomes = outcomeRes.ok ? await outcomeRes.json() : [];
+  openReviewModal(items, report, outcomes);
   return;
 
   // (legacy detail view — kept for reference, no longer shown on card click)
@@ -1472,7 +1477,7 @@ init();
 let reviewItems = [];
 const reviewState = {};
 
-function openReviewModal(items, report) {
+function openReviewModal(items, report, outcomes = []) {
   reviewItems = items;
   Object.keys(reviewState).forEach(k => delete reviewState[k]);
   items.forEach(i => {
@@ -1485,6 +1490,7 @@ function openReviewModal(items, report) {
     'Rosslyn Veterinary Clinic · ' + items.length + ' services flagged for update';
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  renderPerfSummary(outcomes);
   renderReviewList('');
 }
 
@@ -1575,6 +1581,66 @@ function rvUpdateBar() {
   document.getElementById('rv-confirm').disabled = n === 0;
 }
 
+function renderPerfSummary(outcomes) {
+  const wrap = document.getElementById('rv-perf');
+  if (!wrap) return;
+  const tracked = outcomes.filter(o => o.status !== 'no_data');
+  if (!tracked.length) { wrap.innerHTML = ''; return; }
+
+  const flagged = tracked.filter(o => o.status === 'flagged');
+  const good    = tracked.filter(o => o.status === 'ok');
+
+  const totalPre  = tracked.reduce((s, o) => s + (o.pre_revenue  || 0), 0);
+  const totalPost = tracked.reduce((s, o) => s + (o.post_revenue || 0), 0);
+  const revDelta  = totalPre > 0 ? ((totalPost - totalPre) / totalPre * 100) : 0;
+  const deltaColor = revDelta >= 0 ? '#16a34a' : '#dc2626';
+  const deltaSign  = revDelta >= 0 ? '+' : '';
+
+  let expanded = false;
+
+  const rows = [...flagged, ...good].map(o => {
+    const vd = o.visit_delta_pct;
+    const rd = o.revenue_delta_pct;
+    const isFlagged = o.status === 'flagged';
+    const vColor = vd < -15 ? '#dc2626' : vd > 0 ? '#16a34a' : '#64748b';
+    const rColor = rd < -5  ? '#dc2626' : rd > 0 ? '#16a34a' : '#64748b';
+    const gapNote = o.charge_gap_pct < -5
+      ? `<span style="font-size:0.68rem;color:#dc2626;margin-left:4px">avg $${(o.post_avg_charge||0).toFixed(2)} (expected $${(o.price_new||0).toFixed(2)})</span>`
+      : '';
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px;gap:0.75rem;align-items:center;padding:0.55rem 0;border-bottom:1px solid #f1f5f9;font-size:0.8rem;${isFlagged?'background:#fff8f8;margin:0 -1.5rem;padding:0.55rem 1.5rem;':''}" class="rv-perf-row">
+      <div>
+        <div style="font-weight:600;color:${isFlagged?'#dc2626':'#0f172a'}">${isFlagged ? '⚠ ' : ''}${o.service_name || o.service_code}</div>
+        <div style="font-size:0.67rem;color:#94a3b8">${o.service_code}${gapNote}</div>
+      </div>
+      <div style="text-align:right;color:${vColor};font-weight:600">${vd >= 0 ? '+' : ''}${vd.toFixed(1)}%<br><span style="color:#94a3b8;font-weight:400;font-size:0.72rem">${o.pre_visits||0}→${o.post_visits||0} visits/yr</span></div>
+      <div style="text-align:right;color:${rColor};font-weight:600">${rd >= 0 ? '+' : ''}${rd.toFixed(1)}%<br><span style="color:#94a3b8;font-weight:400;font-size:0.72rem">$${Math.round((o.pre_revenue||0)/1000)}K→$${Math.round((o.post_revenue||0)/1000)}K</span></div>
+      <div style="text-align:right;color:#64748b;font-size:0.75rem">$${(o.price_old||0).toFixed(2)} → $${(o.price_new||0).toFixed(2)}</div>
+      <div style="text-align:right"><span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.67rem;font-weight:700;background:${isFlagged?'#fee2e2':'#dcfce7'};color:${isFlagged?'#dc2626':'#16a34a'}">${isFlagged ? 'Review' : 'Good'}</span></div>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div style="border-bottom:1px solid #e2e8f0;padding:0.9rem 1.5rem;background:#f8fafc">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <div>
+          <div style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px">Performance Since Prior Changes</div>
+          <div style="font-size:0.88rem;color:#0f172a">
+            <strong style="color:${deltaColor}">${deltaSign}${revDelta.toFixed(1)}% revenue</strong> ·
+            <strong>${good.length}</strong> of <strong>${tracked.length}</strong> services performing well
+            ${flagged.length ? `· <strong style="color:#dc2626">${flagged.length} flagged</strong>` : ''}
+          </div>
+        </div>
+        <button id="rv-perf-toggle" onclick="(function(){var t=document.getElementById('rv-perf-table');var open=t.style.display!=='none';t.style.display=open?'none':'block';document.getElementById('rv-perf-toggle').textContent=open?'Show details':'Hide details';})()" style="background:none;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.75rem;color:#64748b;cursor:pointer;font-family:inherit;white-space:nowrap">Show details</button>
+      </div>
+    </div>
+    <div id="rv-perf-table" style="display:none;padding:0 1.5rem">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px;gap:0.75rem;padding:0.5rem 0;border-bottom:2px solid #e2e8f0;font-size:0.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.07em">
+        <span>Service</span><span style="text-align:right">Visits</span><span style="text-align:right">Revenue</span><span style="text-align:right">Price change</span><span style="text-align:right">Status</span>
+      </div>
+      ${rows}
+    </div>`;
+}
+
 async function confirmReview() {
   const btn = document.getElementById('rv-confirm');
   btn.textContent = 'Saving…'; btn.disabled = true;
@@ -1624,6 +1690,9 @@ async function confirmReview() {
       <button class="rv-fb" id="rv-f-edited" onclick="rvSetFilter('edited')">Edited</button>
       <button class="rv-fb" id="rv-f-left" onclick="rvSetFilter('left')">Left as is</button>
     </div>
+
+    <!-- Performance summary (populated by renderPerfSummary for Q2+ reports) -->
+    <div id="rv-perf"></div>
 
     <!-- Table header -->
     <div class="rv-hd">
