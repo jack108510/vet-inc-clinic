@@ -421,6 +421,9 @@ body {
   .review-hero { padding: 1.25rem; }
   .tab-nav { padding: 0 0.5rem; overflow-x: auto; }
   .confirm-bar { margin: 0 -1rem; padding: 1rem; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .kpi-value { font-size: 1.35rem; }
+  .kpi-label { font-size: 0.62rem; }
 }
 </style>
 </head>
@@ -584,7 +587,7 @@ body {
   </div>
 
   <!-- KPI grid — 4 cards -->
-  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+  <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-label">Annual Revenue</div>
       <div class="kpi-value" id="kpi-annual-revenue">…</div>
@@ -595,10 +598,10 @@ body {
       <div class="kpi-value" id="kpi-daily-avg">…</div>
       <div class="kpi-sub" id="kpi-daily-sub">vs daily target</div>
     </div>
-    <div class="kpi-card green">
-      <div class="kpi-label">Recovered via Vet INC</div>
+    <div class="kpi-card green" id="kpi-recovered-card">
+      <div class="kpi-label" id="kpi-recovered-label">Revenue Recovered</div>
       <div class="kpi-value" id="kpi-recovered">…</div>
-      <div class="kpi-sub">Est. uplift from approved changes</div>
+      <div class="kpi-sub" id="kpi-recovered-sub">Est. uplift from approved changes</div>
     </div>
     <div class="kpi-card orange">
       <div class="kpi-label">Pending Approval</div>
@@ -1188,9 +1191,18 @@ async function init() {
 
   const activeReport = ALL_REPORTS.find(r => r.status === 'active') || ALL_REPORTS[0];
 
-  // Dashboard KPI: pending suggestion count from latest report
-  const totalUplift = activeReport ? Number(activeReport.total_opportunity) || 0 : 0;
+  // Dashboard KPI: fetch live recommendation total so it matches what the modal shows
+  let totalUplift = activeReport ? Number(activeReport.total_opportunity) || 0 : 0;
   const pendingCount = activeReport ? Number(activeReport.flagged_services) || 0 : 0;
+  if (activeReport) {
+    const liveRecRes = await sbFetch('/rest/v1/price_recommendations?clinic_id=eq.' + CLINIC_ID + '&review_id=eq.' + activeReport.id + '&status=eq.pending&select=annual_volume,price_old,price_new');
+    if (liveRecRes.ok) {
+      const liveRecs = await liveRecRes.json();
+      if (liveRecs.length > 0) {
+        totalUplift = liveRecs.reduce((s, i) => s + Math.round(Number(i.annual_volume || 0) * (Number(i.price_new || 0) - Number(i.price_old || 0))), 0);
+      }
+    }
+  }
   el('total-items') && (el('total-items').textContent = pendingCount);
   el('btn-approve-all-count') && (el('btn-approve-all-count').textContent = pendingCount);
   el('pending-badge') && (el('pending-badge').textContent = pendingCount);
@@ -1203,7 +1215,19 @@ async function init() {
   if (timeline) timeline.innerHTML = renderHistory(approvals);
 
   const recovered = approvals.reduce((s, a) => s + Math.round(Number(a.annual_volume || 0) * (Number(a.price_new || 0) - Number(a.price_old || 0))), 0);
-  if (el('kpi-recovered')) el('kpi-recovered').textContent = '$' + recovered.toLocaleString();
+  if (el('kpi-recovered')) {
+    if (recovered > 0) {
+      el('kpi-recovered').textContent = '$' + recovered.toLocaleString();
+    } else {
+      el('kpi-recovered').textContent = '—';
+      const card = document.getElementById('kpi-recovered-card');
+      if (card) {
+        el('kpi-recovered-label').textContent = 'Revenue Recovered';
+        el('kpi-recovered-sub').textContent = 'Approve your first report to start tracking';
+        card.classList.remove('green');
+      }
+    }
+  }
   if (el('kpi-pending-uplift')) el('kpi-pending-uplift').textContent = '+$' + totalUplift.toLocaleString();
   if (el('kpi-pending-count')) el('kpi-pending-count').textContent = pendingCount + ' item' + (pendingCount !== 1 ? 's' : '') + ' in latest report';
 
@@ -1254,22 +1278,20 @@ async function init() {
       flaggedCount  = ITEMS.length;
       score = ITEMS.length === 0 ? 97 : Math.max(60, 97 - ITEMS.length);
     }
-    const pendingCount = ITEMS.length;
-    const pendingUplift = ITEMS.reduce((s, i) => s + realUplift(i), 0);
-    const scoreAfter    = totalAnalyzed > 0
-      ? Math.round((1 - (flaggedCount - pendingCount) / totalAnalyzed) * 100)
-      : Math.min(97, score + pendingCount * 2);
+    const scoreAfter = totalAnalyzed > 0
+      ? Math.round((1 - flaggedCount / totalAnalyzed) * 100)
+      : 97;
     const healthLabel = score >= 90 ? 'Excellent' : score >= 80 ? 'Good' : score >= 70 ? 'Fair' : 'Needs Attention';
     if (el('health-score-val')) el('health-score-val').textContent = score;
     if (el('health-title')) el('health-title').textContent = 'Pricing Health: ' + healthLabel;
-    if (el('health-desc') && pendingCount > 0) {
+    if (el('health-desc') && flaggedCount > 0) {
       const analysisSub = totalAnalyzed > 0 ? ` (${flaggedCount} of ${totalAnalyzed.toLocaleString()} services scanned)` : '';
-      el('health-desc').innerHTML = pendingCount + ' item' + (pendingCount !== 1 ? 's are' : ' is') + ' behind market rate' + analysisSub + '. Approving all would bring your score to <strong>' + scoreAfter + '</strong>.';
+      el('health-desc').innerHTML = flaggedCount + ' service' + (flaggedCount !== 1 ? 's are' : ' is') + ' behind market rate' + analysisSub + '. Reviewing your latest report could unlock <strong>+$' + totalUplift.toLocaleString() + '/yr</strong>.';
     } else if (el('health-desc')) {
       const analysisSub = totalAnalyzed > 0 ? ` ${totalAnalyzed.toLocaleString()} services analyzed.` : '';
       el('health-desc').textContent = 'Your pricing is up to date.' + analysisSub;
     }
-    if (pendingCount > 0 && el('health-action')) {
+    if (flaggedCount > 0 && el('health-action')) {
       el('health-action').innerHTML = '<button onclick="document.getElementById(\'tab-btn-reports\').click()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.82rem;font-weight:700;cursor:pointer">Review Now →</button>';
     }
 
