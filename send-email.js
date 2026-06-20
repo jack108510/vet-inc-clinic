@@ -1,13 +1,3 @@
-/**
- * Vet INC — Email Module
- *
- * Two functions:
- *   sendReviewEmail()  — quarterly review is ready, owner needs to approve changes
- *   sendAlertEmail()   — one or more confirmed price changes are underperforming
- *
- * Only called when action is needed. Never sends routine updates.
- */
-
 import nodemailer from 'nodemailer';
 
 const SMTP = {
@@ -21,39 +11,41 @@ const SMTP = {
 };
 
 const FROM = '"Vet INC" <jack@wildroseautomations.ca>';
+const LOGO = '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';
+const YEAR = new Date().getFullYear();
 
-function fmt$(n) {
-  return '$' + Number(n).toLocaleString('en-CA', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function pct(v) {
-  return (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%';
-}
-
-function emailBase(bodyContent) {
+function email({ clinicName, ownerName, headline, body, buttonLabel, buttonUrl }) {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f0f6ff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f6ff;padding:32px 16px">
+<body style="margin:0;padding:0;background:#e8eef7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px">
   <tr><td align="center">
-    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:460px">
 
-      <!-- Header -->
-      <tr><td style="background:linear-gradient(135deg,#1d4ed8,#2563eb,#3b82f6);border-radius:12px 12px 0 0;padding:28px 32px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.7);margin-bottom:6px">VET INC</div>
-        <div style="font-size:22px;font-weight:900;color:#fff;line-height:1.15">Pricing Management</div>
+      <!-- Logo card -->
+      <tr><td style="background:#ffffff;border-radius:12px 12px 0 0;padding:28px 32px;border-bottom:1px solid #e8eef7">
+        <img src="data:image/png;base64,${LOGO}" alt="Vet INC" height="36" style="display:block;border:0">
       </td></tr>
 
-      <!-- Body -->
-      <tr><td style="background:#fff;padding:32px;border-left:1px solid #dbeafe;border-right:1px solid #dbeafe">
-        ${bodyContent}
+      <!-- Content card -->
+      <tr><td style="background:#ffffff;padding:28px 32px 32px;border-radius:0 0 12px 12px">
+
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">${clinicName}</div>
+
+        <div style="font-size:22px;font-weight:700;color:#1e3a5f;line-height:1.25;margin-bottom:16px">Hi ${ownerName}, ${headline}</div>
+
+        <div style="font-size:15px;color:#475569;line-height:1.65;margin-bottom:24px">${body}</div>
+
+        <a href="${buttonUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:13px 26px;border-radius:8px;margin-bottom:16px">${buttonLabel} →</a>
+
+        <div style="font-size:12px;color:#94a3b8">No login required &nbsp;·&nbsp; Link expires in 7 days</div>
+
       </td></tr>
 
       <!-- Footer -->
-      <tr><td style="background:#f8fafc;border:1px solid #dbeafe;border-top:none;border-radius:0 0 12px 12px;padding:16px 32px;font-size:11px;color:#94a3b8;line-height:1.5">
-        Vet INC by Wilde Automations · <a href="https://wildroseautomations.ca" style="color:#2563eb;text-decoration:none">wildroseautomations.ca</a><br>
-        You're receiving this because a pricing action is needed for your clinic.
+      <tr><td style="padding:18px 0;font-size:11px;color:#94a3b8;text-align:center;line-height:1.8">
+        © ${YEAR} Vet INC &nbsp;·&nbsp; jack@wildroseautomations.ca &nbsp;·&nbsp; <a href="#" style="color:#94a3b8;text-decoration:none">Unsubscribe</a>
       </td></tr>
 
     </table>
@@ -63,133 +55,41 @@ function emailBase(bodyContent) {
 </html>`;
 }
 
-/**
- * Quarterly review email — sent when analyze-prices.js generates new recommendations.
- *
- * @param {object} opts
- * @param {string} opts.to            - owner email
- * @param {string} opts.clinicName    - e.g. "Rosslyn Veterinary Clinic"
- * @param {string} opts.reportTitle   - e.g. "Q2 2026"
- * @param {number} opts.flaggedCount  - number of services flagged
- * @param {number} opts.totalOpportunity - estimated annual uplift in $
- * @param {string} opts.portalUrl     - direct link to owner portal
- */
-export async function sendReviewEmail({ to, clinicName, reportTitle, flaggedCount, totalOpportunity, portalUrl }) {
+export async function sendReviewEmail({ to, ownerName, clinicName, flaggedCount, portalUrl }) {
   const transport = nodemailer.createTransport(SMTP);
-
-  const body = `
-    <p style="font-size:16px;font-weight:700;color:#0f172a;margin:0 0 8px">Your ${reportTitle} pricing review is ready.</p>
-    <p style="font-size:14px;color:#475569;margin:0 0 24px;line-height:1.6">
-      We've analyzed ${clinicName}'s pricing data and identified <strong>${flaggedCount} service${flaggedCount !== 1 ? 's' : ''}</strong> where prices haven't kept pace with inflation.
-    </p>
-
-    <!-- Opportunity callout -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid #2563eb;border-radius:8px;margin-bottom:24px">
-      <tr><td style="padding:16px 20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#2563eb;margin-bottom:4px">Estimated Annual Uplift</div>
-        <div style="font-size:28px;font-weight:900;color:#0f172a">+${fmt$(totalOpportunity)}<span style="font-size:14px;font-weight:500;color:#64748b">/yr</span></div>
-        <div style="font-size:12px;color:#64748b;margin-top:2px">if all suggested changes are accepted</div>
-      </td></tr>
-    </table>
-
-    <p style="font-size:13px;color:#475569;margin:0 0 20px;line-height:1.6">
-      The review takes about 5 minutes. You'll see every suggested price, the estimated impact, and you can accept, adjust, or skip each one individually.
-    </p>
-
-    <!-- CTA button -->
-    <table cellpadding="0" cellspacing="0" style="margin-bottom:24px">
-      <tr><td style="background:#2563eb;border-radius:8px;padding:13px 28px">
-        <a href="${portalUrl}" style="color:#fff;font-size:15px;font-weight:700;text-decoration:none;display:block">Review Your Pricing →</a>
-      </td></tr>
-    </table>
-
-    <p style="font-size:12px;color:#94a3b8;margin:0;line-height:1.5">
-      Or paste this link in your browser:<br>
-      <a href="${portalUrl}" style="color:#2563eb;font-size:11px">${portalUrl}</a>
-    </p>`;
-
+  const name = ownerName || 'there';
   await transport.sendMail({
     from: FROM,
     to,
-    subject: `${reportTitle} pricing review ready — ${flaggedCount} items, +${fmt$(totalOpportunity)}/yr opportunity`,
-    html: emailBase(body)
+    subject: `You have ${flaggedCount} pricing items to review — ${clinicName}`,
+    html: email({
+      clinicName,
+      ownerName: name,
+      headline: 'you have pricing items to review',
+      body: `There are <strong>${flaggedCount} items</strong> waiting for your approval. Click below to review them — it only takes a couple of minutes.`,
+      buttonLabel: 'Review Items',
+      buttonUrl: portalUrl,
+    })
   });
-
   console.log(`  ✉  Review email sent to ${to}`);
 }
 
-/**
- * Performance alert email — sent when track-outcomes.js newly flags one or more services.
- * Only called for services that are NEWLY flagged (status just changed to 'flagged').
- *
- * @param {object} opts
- * @param {string} opts.to           - owner email
- * @param {string} opts.clinicName
- * @param {Array}  opts.flaggedItems - price_outcomes rows with status='flagged'
- * @param {string} opts.portalUrl    - direct link to owner portal
- */
-export async function sendAlertEmail({ to, clinicName, flaggedItems, portalUrl }) {
+export async function sendAlertEmail({ to, ownerName, clinicName, flaggedItems, portalUrl }) {
   const transport = nodemailer.createTransport(SMTP);
-
   const count = flaggedItems.length;
-  const rows = flaggedItems.map(o => {
-    const vd = Number(o.visit_delta_pct);
-    const rd = Number(o.revenue_delta_pct);
-    const vColor = vd < -15 ? '#dc2626' : '#64748b';
-    const rColor = rd < -5  ? '#dc2626' : '#64748b';
-    return `
-    <tr style="border-bottom:1px solid #f1f5f9">
-      <td style="padding:10px 12px;font-size:13px;font-weight:600;color:#0f172a">${o.service_name || o.service_code}</td>
-      <td style="padding:10px 12px;font-size:13px;color:${vColor};text-align:right;font-weight:700">${pct(vd)}</td>
-      <td style="padding:10px 12px;font-size:13px;color:${rColor};text-align:right;font-weight:700">${pct(rd)}</td>
-    </tr>`;
-  }).join('');
-
-  const body = `
-    <p style="font-size:16px;font-weight:700;color:#dc2626;margin:0 0 8px">
-      Price reconsideration needed${count > 1 ? ` — ${count} services` : ''}.
-    </p>
-    <p style="font-size:14px;color:#475569;margin:0 0 20px;line-height:1.6">
-      ${count === 1
-        ? `<strong>${flaggedItems[0].service_name || flaggedItems[0].service_code}</strong> is underperforming since its price was raised. Revenue or visit volume has dropped below the threshold we watch for.`
-        : `${count} services at ${clinicName} are underperforming since their prices were raised.`
-      }
-    </p>
-
-    <!-- Service table -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #fecaca;border-radius:8px;overflow:hidden;margin-bottom:24px;font-size:12px">
-      <tr style="background:#fef2f2">
-        <th style="padding:8px 12px;text-align:left;color:#7f1d1d;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em">Service</th>
-        <th style="padding:8px 12px;text-align:right;color:#7f1d1d;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em">Visits</th>
-        <th style="padding:8px 12px;text-align:right;color:#7f1d1d;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em">Revenue</th>
-      </tr>
-      ${rows}
-    </table>
-
-    <p style="font-size:13px;color:#475569;margin:0 0 20px;line-height:1.6">
-      You can lower the price to a level that works, or keep it and check back in 30 days. Takes less than 2 minutes.
-    </p>
-
-    <!-- CTA button -->
-    <table cellpadding="0" cellspacing="0" style="margin-bottom:24px">
-      <tr><td style="background:#dc2626;border-radius:8px;padding:13px 28px">
-        <a href="${portalUrl}" style="color:#fff;font-size:15px;font-weight:700;text-decoration:none;display:block">Review Now →</a>
-      </td></tr>
-    </table>
-
-    <p style="font-size:12px;color:#94a3b8;margin:0;line-height:1.5">
-      Or paste this link in your browser:<br>
-      <a href="${portalUrl}" style="color:#2563eb;font-size:11px">${portalUrl}</a>
-    </p>`;
-
+  const name = ownerName || 'there';
   await transport.sendMail({
     from: FROM,
     to,
-    subject: count === 1
-      ? `Price reconsideration needed — ${flaggedItems[0].service_name || flaggedItems[0].service_code}`
-      : `${count} prices need reconsideration — ${clinicName}`,
-    html: emailBase(body)
+    subject: `${count} price${count === 1 ? '' : 's'} need attention — ${clinicName}`,
+    html: email({
+      clinicName,
+      ownerName: name,
+      headline: `${count === 1 ? 'a price needs' : `${count} prices need`} your attention`,
+      body: `${count === 1 ? 'One service' : `${count} services`} at ${clinicName} ${count === 1 ? 'is' : 'are'} underperforming since the last price change. Click below to review and adjust — it only takes a couple of minutes.`,
+      buttonLabel: 'Review Now',
+      buttonUrl: portalUrl,
+    })
   });
-
-  console.log(`  ✉  Alert email sent to ${to} (${count} flagged service${count !== 1 ? 's' : ''})`);
+  console.log(`  ✉  Alert email sent to ${to}`);
 }
