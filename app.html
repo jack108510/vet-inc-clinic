@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Vet INC</title>
+<link rel="icon" href="logo.png"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:    #080e1a;
+  --bg2:   #0d1526;
+  --bg3:   #111c33;
+  --blue:  #3b82f6;
+  --blue2: #2563eb;
+  --line:  rgba(255,255,255,.08);
+  --text:  #ffffff;
+  --dim:   rgba(255,255,255,.4);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* SCREENS */
+.screen { display: none; position: absolute; inset: 0 0 calc(64px + var(--safe-bottom)) 0; overflow-y: auto; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* TOP BAR */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  padding: 52px 20px 16px;
+  background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-logo { height: 34px; width: auto; }
+.topbar-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+.topbar-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--blue2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+
+/* EMPTY STATE */
+.empty {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 40px 32px;
+  text-align: center;
+}
+.empty-icon {
+  width: 64px; height: 64px; border-radius: 18px;
+  background: var(--bg3);
+  border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; margin-bottom: 4px;
+}
+.empty h2 { font-size: 1.1rem; font-weight: 700; }
+.empty p { font-size: .88rem; color: var(--dim); line-height: 1.5; max-width: 240px; }
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(64px + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: rgba(8,14,26,.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--line);
+  display: flex; align-items: flex-start; justify-content: space-around;
+  z-index: 100;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; padding: 10px 4px 0;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  border: none; background: none; color: var(--dim);
+  transition: color .15s;
+}
+.nav-item.active { color: var(--blue); }
+.nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav-item span { font-size: .65rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+
+/* DASHBOARD CARDS */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 24px; }
+.kpi-card {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 16px; padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.kpi-label { font-size: .72rem; color: var(--dim); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+.kpi-value { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; background: linear-gradient(135deg, #fff 30%, rgba(255,255,255,.5)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.kpi-sub { font-size: .72rem; color: var(--dim); }
+
+.section-label { font-size: .72rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; padding: 0 16px 10px; }
+
+.activity-list { padding: 0 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+.activity-item {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.activity-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+.activity-dot.dim { background: var(--line); }
+.activity-text { flex: 1; font-size: .88rem; color: var(--dim); }
+.activity-text strong { color: var(--text); font-weight: 600; }
+
+/* SETTINGS LIST */
+.settings-list { padding: 0 16px 24px; display: flex; flex-direction: column; gap: 2px; }
+.settings-row {
+  background: var(--bg2);
+  padding: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.settings-row:first-child { border-radius: 14px 14px 0 0; }
+.settings-row:last-child { border-radius: 0 0 14px 14px; border-bottom: none; }
+.settings-row:only-child { border-radius: 14px; }
+.settings-label { font-size: .92rem; font-weight: 500; }
+.settings-arrow { color: var(--dim); font-size: .8rem; }
+
+/* PILL BUTTON */
+.pill-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--blue2); color: #fff;
+  border: none; border-radius: 50px; padding: 14px 32px;
+  font-size: .95rem; font-weight: 700; cursor: pointer;
+  width: calc(100% - 32px); margin: 0 16px 24px;
+  -webkit-tap-highlight-color: transparent;
+}
+</style>
+</head>
+<body>
+
+<!-- DASHBOARD -->
+<div class="screen active" id="screen-dashboard">
+  <div class="topbar">
+    <img src="logo.png" class="topbar-logo" alt="Vet INC"/>
+    <div class="topbar-avatar">RV</div>
+  </div>
+  <div class="dash-grid">
+    <div class="kpi-card"><div class="kpi-label">Services</div><div class="kpi-value">—</div><div class="kpi-sub">tracked</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">—</div><div class="kpi-sub">to review</div></div>
+    <div class="kpi-card"><div class="kpi-label">Last Update</div><div class="kpi-value">—</div><div class="kpi-sub">days ago</div></div>
+    <div class="kpi-card"><div class="kpi-label">Est. Uplift</div><div class="kpi-value">—</div><div class="kpi-sub">if approved</div></div>
+  </div>
+  <div class="section-label">Recent Activity</div>
+  <div class="activity-list">
+    <div class="activity-item"><div class="activity-dot dim"></div><div class="activity-text">No activity yet</div></div>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="screen" id="screen-reports">
+  <div class="topbar"><div class="topbar-title">Reports</div></div>
+  <div class="empty">
+    <div class="empty-icon">📊</div>
+    <h2>Reports</h2>
+    <p>Price performance, revenue trends, and uplift breakdowns will appear here.</p>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="screen-history">
+  <div class="topbar"><div class="topbar-title">History</div></div>
+  <div class="empty">
+    <div class="empty-icon">🗂</div>
+    <h2>History</h2>
+    <p>A full log of every price change — approved, rejected, and pending — will appear here.</p>
+  </div>
+</div>
+
+<!-- MAKE A CHANGE -->
+<div class="screen" id="screen-change">
+  <div class="topbar"><div class="topbar-title">Make a Change</div></div>
+  <div class="empty">
+    <div class="empty-icon">✏️</div>
+    <h2>Make a Change</h2>
+    <p>Review suggested price updates and approve or reject them one by one — or all at once.</p>
+  </div>
+  <button class="pill-btn">Review Suggestions</button>
+</div>
+
+<!-- SETTINGS -->
+<div class="screen" id="screen-settings">
+  <div class="topbar">
+    <div class="topbar-title">Settings</div>
+    <div class="topbar-avatar">RV</div>
+  </div>
+  <div class="settings-list">
+    <div class="settings-row"><span class="settings-label">Clinic Profile</span><span class="settings-arrow">›</span></div>
+    <div class="settings-row"><span class="settings-label">Notifications</span><span class="settings-arrow">›</span></div>
+    <div class="settings-row"><span class="settings-label">Update Schedule</span><span class="settings-arrow">›</span></div>
+    <div class="settings-row"><span class="settings-label">Billing</span><span class="settings-arrow">›</span></div>
+  </div>
+  <div class="settings-list" style="margin-top:8px">
+    <div class="settings-row"><span class="settings-label" style="color:rgba(255,255,255,.35)">Sign Out</span></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span>Dashboard</span>
+  </button>
+  <button class="nav-item" id="nav-reports" onclick="switchTab('reports')">
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>Reports</span>
+  </button>
+  <button class="nav-item" id="nav-change" onclick="switchTab('change')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <span>Changes</span>
+  </button>
+  <button class="nav-item" id="nav-history" onclick="switchTab('history')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+    <span>History</span>
+  </button>
+  <button class="nav-item" id="nav-settings" onclick="switchTab('settings')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+}
+</script>
+</body>
+</html>
