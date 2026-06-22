@@ -5,80 +5,91 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <title>Vet INC</title>
 <link rel="icon" href="logo.png"/>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:    #080e1a;
-  --bg2:   #0d1526;
-  --bg3:   #111c33;
-  --blue:  #3b82f6;
-  --blue2: #2563eb;
-  --line:  rgba(255,255,255,.08);
-  --text:  #ffffff;
-  --dim:   rgba(255,255,255,.4);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bg:      #f5f7fa;
+  --bg2:     #ffffff;
+  --line:    rgba(0,0,0,.08);
+  --blue:    #2563eb;
+  --blue2:   #1d4ed8;
+  --text:    #0f172a;
+  --dim:     rgba(15,23,42,.45);
+  --safe-b:  env(safe-area-inset-bottom, 0px);
 }
 
 html, body {
-  height: 100%;
-  background: var(--bg);
-  color: var(--text);
+  height: 100%; background: var(--bg); color: var(--text);
   font-family: -apple-system, 'SF Pro Display', 'Inter', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+  -webkit-font-smoothing: antialiased; overflow: hidden;
 }
 
 /* SCREENS */
-.screen { display: none; position: absolute; inset: 0 0 calc(64px + var(--safe-bottom)) 0; overflow-y: auto; }
+.screen {
+  display: none; position: absolute;
+  inset: 0 0 calc(64px + var(--safe-b)) 0;
+  overflow-y: auto;
+}
 .screen.active { display: flex; flex-direction: column; }
 
 /* TOP BAR */
 .topbar {
   position: sticky; top: 0; z-index: 10;
-  padding: 52px 20px 16px;
-  background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+  padding: env(safe-area-inset-top, 44px) 20px 14px;
+  background: var(--bg);
   display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--line);
 }
-.topbar-logo { height: 34px; width: auto; }
-.topbar-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+.topbar-logo { height: 32px; width: auto; }
+.topbar-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
 .topbar-avatar {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--blue2);
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--blue);
   display: flex; align-items: center; justify-content: center;
-  font-size: .8rem; font-weight: 700; color: #fff;
-  flex-shrink: 0;
+  font-size: .75rem; font-weight: 700; color: #fff; flex-shrink: 0;
 }
 
 /* EMPTY STATE */
 .empty {
-  flex: 1;
-  display: flex; flex-direction: column;
+  flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 12px; padding: 40px 32px;
-  text-align: center;
+  gap: 10px; padding: 40px 32px; text-align: center;
 }
 .empty-icon {
-  width: 64px; height: 64px; border-radius: 18px;
-  background: var(--bg3);
-  border: 1px solid var(--line);
+  width: 60px; height: 60px; border-radius: 16px;
+  background: var(--bg2); border: 1px solid var(--line);
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.8rem; margin-bottom: 4px;
+  font-size: 1.6rem; margin-bottom: 4px;
 }
-.empty h2 { font-size: 1.1rem; font-weight: 700; }
-.empty p { font-size: .88rem; color: var(--dim); line-height: 1.5; max-width: 240px; }
+.empty h2 { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.empty p { font-size: .85rem; color: var(--dim); line-height: 1.55; max-width: 240px; }
+
+/* SETTINGS */
+.settings-section { padding: 20px 16px 6px; font-size: .72rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; }
+.settings-list { padding: 0 16px; display: flex; flex-direction: column; }
+.settings-row {
+  background: var(--bg2); padding: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.settings-row:first-child { border-radius: 12px 12px 0 0; }
+.settings-row:last-child { border-radius: 0 0 12px 12px; border-bottom: none; }
+.settings-label { font-size: .95rem; font-weight: 500; color: var(--text); }
+.settings-arrow { color: var(--dim); font-size: .9rem; }
+.settings-row.danger .settings-label { color: #ef4444; }
 
 /* BOTTOM NAV */
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0;
-  height: calc(64px + var(--safe-bottom));
-  padding-bottom: var(--safe-bottom);
-  background: rgba(8,14,26,.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  height: calc(64px + var(--safe-b));
+  padding-bottom: var(--safe-b);
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--line);
   display: flex; align-items: flex-start; justify-content: space-around;
   z-index: 100;
@@ -86,63 +97,14 @@ html, body {
 .nav-item {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 4px; padding: 10px 4px 0;
+  gap: 3px; padding: 10px 4px 0;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   border: none; background: none; color: var(--dim);
   transition: color .15s;
 }
 .nav-item.active { color: var(--blue); }
-.nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.nav-item span { font-size: .65rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
-
-/* DASHBOARD CARDS */
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 24px; }
-.kpi-card {
-  background: var(--bg2); border: 1px solid var(--line);
-  border-radius: 16px; padding: 18px 16px;
-  display: flex; flex-direction: column; gap: 6px;
-}
-.kpi-label { font-size: .72rem; color: var(--dim); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
-.kpi-value { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; background: linear-gradient(135deg, #fff 30%, rgba(255,255,255,.5)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.kpi-sub { font-size: .72rem; color: var(--dim); }
-
-.section-label { font-size: .72rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; padding: 0 16px 10px; }
-
-.activity-list { padding: 0 16px 24px; display: flex; flex-direction: column; gap: 10px; }
-.activity-item {
-  background: var(--bg2); border: 1px solid var(--line);
-  border-radius: 14px; padding: 14px 16px;
-  display: flex; align-items: center; gap: 14px;
-}
-.activity-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
-.activity-dot.dim { background: var(--line); }
-.activity-text { flex: 1; font-size: .88rem; color: var(--dim); }
-.activity-text strong { color: var(--text); font-weight: 600; }
-
-/* SETTINGS LIST */
-.settings-list { padding: 0 16px 24px; display: flex; flex-direction: column; gap: 2px; }
-.settings-row {
-  background: var(--bg2);
-  padding: 16px;
-  display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-}
-.settings-row:first-child { border-radius: 14px 14px 0 0; }
-.settings-row:last-child { border-radius: 0 0 14px 14px; border-bottom: none; }
-.settings-row:only-child { border-radius: 14px; }
-.settings-label { font-size: .92rem; font-weight: 500; }
-.settings-arrow { color: var(--dim); font-size: .8rem; }
-
-/* PILL BUTTON */
-.pill-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--blue2); color: #fff;
-  border: none; border-radius: 50px; padding: 14px 32px;
-  font-size: .95rem; font-weight: 700; cursor: pointer;
-  width: calc(100% - 32px); margin: 0 16px 24px;
-  -webkit-tap-highlight-color: transparent;
-}
+.nav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav-item span { font-size: .62rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
 </style>
 </head>
 <body>
@@ -153,15 +115,10 @@ html, body {
     <img src="logo.png" class="topbar-logo" alt="Vet INC"/>
     <div class="topbar-avatar">RV</div>
   </div>
-  <div class="dash-grid">
-    <div class="kpi-card"><div class="kpi-label">Services</div><div class="kpi-value">—</div><div class="kpi-sub">tracked</div></div>
-    <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">—</div><div class="kpi-sub">to review</div></div>
-    <div class="kpi-card"><div class="kpi-label">Last Update</div><div class="kpi-value">—</div><div class="kpi-sub">days ago</div></div>
-    <div class="kpi-card"><div class="kpi-label">Est. Uplift</div><div class="kpi-value">—</div><div class="kpi-sub">if approved</div></div>
-  </div>
-  <div class="section-label">Recent Activity</div>
-  <div class="activity-list">
-    <div class="activity-item"><div class="activity-dot dim"></div><div class="activity-text">No activity yet</div></div>
+  <div class="empty">
+    <div class="empty-icon">🏠</div>
+    <h2>Dashboard</h2>
+    <p>Your clinic overview will appear here.</p>
   </div>
 </div>
 
@@ -171,17 +128,7 @@ html, body {
   <div class="empty">
     <div class="empty-icon">📊</div>
     <h2>Reports</h2>
-    <p>Price performance, revenue trends, and uplift breakdowns will appear here.</p>
-  </div>
-</div>
-
-<!-- HISTORY -->
-<div class="screen" id="screen-history">
-  <div class="topbar"><div class="topbar-title">History</div></div>
-  <div class="empty">
-    <div class="empty-icon">🗂</div>
-    <h2>History</h2>
-    <p>A full log of every price change — approved, rejected, and pending — will appear here.</p>
+    <p>Price performance and revenue trends will appear here.</p>
   </div>
 </div>
 
@@ -191,33 +138,44 @@ html, body {
   <div class="empty">
     <div class="empty-icon">✏️</div>
     <h2>Make a Change</h2>
-    <p>Review suggested price updates and approve or reject them one by one — or all at once.</p>
+    <p>Review and approve suggested price updates here.</p>
   </div>
-  <button class="pill-btn">Review Suggestions</button>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="screen-history">
+  <div class="topbar"><div class="topbar-title">History</div></div>
+  <div class="empty">
+    <div class="empty-icon">🗂</div>
+    <h2>History</h2>
+    <p>All past price changes and approvals will appear here.</p>
+  </div>
 </div>
 
 <!-- SETTINGS -->
 <div class="screen" id="screen-settings">
-  <div class="topbar">
-    <div class="topbar-title">Settings</div>
-    <div class="topbar-avatar">RV</div>
-  </div>
+  <div class="topbar"><div class="topbar-title">Settings</div><div class="topbar-avatar">RV</div></div>
+  <div class="settings-section">Account</div>
   <div class="settings-list">
     <div class="settings-row"><span class="settings-label">Clinic Profile</span><span class="settings-arrow">›</span></div>
     <div class="settings-row"><span class="settings-label">Notifications</span><span class="settings-arrow">›</span></div>
+  </div>
+  <div class="settings-section">Preferences</div>
+  <div class="settings-list">
     <div class="settings-row"><span class="settings-label">Update Schedule</span><span class="settings-arrow">›</span></div>
     <div class="settings-row"><span class="settings-label">Billing</span><span class="settings-arrow">›</span></div>
   </div>
-  <div class="settings-list" style="margin-top:8px">
-    <div class="settings-row"><span class="settings-label" style="color:rgba(255,255,255,.35)">Sign Out</span></div>
+  <div class="settings-section"></div>
+  <div class="settings-list">
+    <div class="settings-row danger"><span class="settings-label">Sign Out</span></div>
   </div>
 </div>
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <button class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    <span>Dashboard</span>
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <span>Home</span>
   </button>
   <button class="nav-item" id="nav-reports" onclick="switchTab('reports')">
     <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
